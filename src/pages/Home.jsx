@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import "./Home.css";
  
 const products = [
@@ -39,8 +39,15 @@ function Home() {
   const [catError, setCatError] = useState(null);
   const [cartMessage, setCartMessage] = useState(null);
   const [cartError, setCartError] = useState(null);
+  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const storedUser = localStorage.getItem("loggedInUser");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+
     let mounted = true;
     fetch("http://localhost:8081/category/getAllCategory")
       .then((res) => {
@@ -84,6 +91,18 @@ function Home() {
   const handleAddToCart = (productId, quantity = 1) => {
     setCartMessage(null);
     setCartError(null);
+    const storedUser = localStorage.getItem("loggedInUser");
+
+    if (!storedUser) {
+      setCartError("Please login to add items to cart.");
+      return;
+    }
+
+    const user = JSON.parse(storedUser);
+    if (!user?.userId) {
+      setCartError("Please login to add items to cart.");
+      return;
+    }
 
     fetch("http://localhost:8082/cart/addToCart", {
       method: "POST",
@@ -91,7 +110,7 @@ function Home() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        userId: 5,
+        userId: user.userId,
         productId,
         quantity,
       }),
@@ -130,7 +149,30 @@ function Home() {
           <Link to="/cart" className="cart">
             🛒
           </Link>
-          <span className="user">👤 Hi, John</span>
+          {user ? (
+            <>
+              <span className="user">👤 Hi, {user.firstName}</span>
+              <button
+                className="logout-btn"
+                onClick={() => {
+                  localStorage.removeItem("loggedInUser");
+                  setUser(null);
+                  navigate("/login");
+                }}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link to="/login" className="auth-button">
+                Login
+              </Link>
+              <Link to="/signup" className="auth-button signup-button">
+                Signup
+              </Link>
+            </>
+          )}
         </div>
  
       </nav>

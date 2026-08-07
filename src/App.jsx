@@ -12,6 +12,18 @@ import OrderSuccess from './pages/OrderSuccess'
 import MyOrders from './pages/MyOrders'
 import CheckoutUPI from './pages/CheckoutUPI'
 
+const ProtectedRoute = ({ children }) => {
+  const storedUser = localStorage.getItem('loggedInUser');
+  if (!storedUser) {
+    return <Navigate to="/login" replace />;
+  }
+  const user = JSON.parse(storedUser);
+  if (!user?.userId) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
+
 function App() {
   return (
     <>
@@ -38,7 +50,14 @@ function App() {
         <Route path="/product-details" element={<ProductDetails />} />
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
-        <Route path="/checkout" element={<Checkout />} />
+        <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute>
+              <Checkout />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/payment" element={<Payment />} />
         <Route path="/order-success" element={<OrderSuccess />} />
         <Route path="/my-orders" element={<MyOrders />} />

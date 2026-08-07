@@ -1,30 +1,64 @@
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Cart.css";
 
-const cartItems = [
-  {
-    id: 1,
-    name: "HP Pavilion Laptop",
-    price: 50000,
-    quantity: 1,
-    image: "https://via.placeholder.com/70x70?text=Laptop",
-  },
-  {
-    id: 2,
-    name: "iPhone 13",
-    price: 60000,
-    quantity: 1,
-    image: "https://via.placeholder.com/70x70?text=iPhone",
-  },
-  {
-    id: 3,
-    name: "Boat Rockerz 450",
-    price: 2499,
-    quantity: 1,
-    image: "https://via.placeholder.com/70x70?text=Headphone",
-  },
-];
-
 function Cart() {
+  const navigate = useNavigate();
+  const [cartData, setCartData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("loggedInUser");
+    if (!storedUser) {
+      setError("Please login to view your cart.");
+      setLoading(false);
+      return;
+    }
+
+    const user = JSON.parse(storedUser);
+    if (!user?.userId) {
+      setError("Please login to view your cart.");
+      setLoading(false);
+      return;
+    }
+
+    setUserId(user.userId);
+    fetch(`http://localhost:8082/cart/getCartByUserId/${user.userId}`)
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setCartData(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message || "Failed to load cart.");
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="cart-page">
+        <p>Loading cart...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="cart-page">
+        <p className="error">{error}</p>
+      </div>
+    );
+  }
+
+  const cartItems = cartData?.items || [];
   const subtotal = cartItems.reduce(
     (total, item) => total + item.price * item.quantity,
     0
@@ -32,6 +66,15 @@ function Cart() {
 
   const shipping = 100;
   const grandTotal = subtotal + shipping;
+
+  const handleContinueShopping = () => {
+    navigate("/");
+  };
+
+  const handleProceedToCheckout = () => {
+    localStorage.setItem("grandTotal", JSON.stringify(grandTotal));
+    navigate("/checkout");
+  };
 
   return (
     <div className="cart-page">
@@ -51,11 +94,10 @@ function Cart() {
         </div>
 
         {cartItems.map((item) => (
-          <div className="cart-row" key={item.id}>
+          <div className="cart-row" key={item.cartItemId}>
 
             <div className="product">
-              <img src={item.image} alt={item.name} />
-              <p>{item.name}</p>
+              <p>{item.productName}</p>
             </div>
 
             <div>₹{item.price.toLocaleString()}</div>
@@ -66,7 +108,7 @@ function Cart() {
               <button>+</button>
             </div>
 
-            <div>₹{(item.price * item.quantity).toLocaleString()}</div>
+            <div>₹{item.totalPrice.toLocaleString()}</div>
 
             <button className="delete-btn">🗑️</button>
 
@@ -96,11 +138,11 @@ function Cart() {
 
       <div className="buttons">
 
-        <button className="continue-btn">
+        <button className="continue-btn" onClick={handleContinueShopping}>
           Continue Shopping
         </button>
 
-        <button className="checkout-btn">
+        <button className="checkout-btn" onClick={handleProceedToCheckout}>
           Proceed to Checkout
         </button>
 

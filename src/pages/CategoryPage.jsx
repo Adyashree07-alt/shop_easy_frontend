@@ -59,13 +59,26 @@ const CategoryPage = () => {
     setCartMessage(null);
     setCartError(null);
 
+    const storedUser = localStorage.getItem("loggedInUser");
+    if (!storedUser) {
+      setCartError("Please login to add products to your cart.");
+      return;
+    }
+
+    const user = JSON.parse(storedUser);
+    const userId = user?.userId;
+    if (!userId) {
+      setCartError("Please login to add products to your cart.");
+      return;
+    }
+
     fetch("http://localhost:8082/cart/addToCart", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        userId: 5,
+        userId,
         productId,
         quantity,
       }),
