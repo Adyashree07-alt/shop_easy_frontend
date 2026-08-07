@@ -1,0 +1,160 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Poppins",sans-serif;
+}
+
+body{
+    background:#f5f5fb;
+}
+
+.orders-page{
+    width:90%;
+    max-width:1100px;
+    margin:40px auto 100px;
+}
+
+.orders-page h2{
+    margin-bottom:20px;
+    color:#333;
+}
+
+.orders-card{
+    background:#fff;
+    border-radius:12px;
+    overflow:hidden;
+    box-shadow:0 5px 15px rgba(0,0,0,.08);
+}
+
+/* Table */
+
+.table-header,
+.order-row{
+    display:grid;
+    grid-template-columns:2fr 1.5fr 1.2fr 1.3fr 1fr;
+    align-items:center;
+    padding:18px 20px;
+}
+
+.table-header{
+    background:#f5f5f5;
+    font-weight:600;
+    color:#555;
+}
+
+.order-row{
+    border-top:1px solid #eee;
+}
+
+.order-row:hover{
+    background:#fafafa;
+}
+
+/* Status */
+
+.status{
+    width:110px;
+    text-align:center;
+    padding:7px 12px;
+    border-radius:20px;
+    font-size:14px;
+    font-weight:600;
+}
+
+.delivered{
+    background:#d4f8dd;
+    color:#0b8b33;
+}
+
+.shipped{
+    background:#dbe8ff;
+    color:#1f5ed6;
+}
+
+.processing{
+    background:#ffe7c2;
+    color:#d88700;
+}
+
+.cancelled{
+    background:#ffd6d6;
+    color:#d62828;
+}
+
+/* View Button */
+
+.view-btn{
+    background:none;
+    border:none;
+    color:#6c3ef4;
+    cursor:pointer;
+    font-weight:600;
+    font-size:15px;
+}
+
+.view-btn:hover{
+    text-decoration:underline;
+}
+
+/* Bottom Navigation */
+
+.bottom-nav{
+    position:fixed;
+    left:0;
+    right:0;
+    bottom:0;
+    height:70px;
+    background:#fff;
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+    box-shadow:0 -2px 10px rgba(0,0,0,.1);
+}
+
+.nav-item{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    color:#777;
+    cursor:pointer;
+    font-size:14px;
+}
+
+.nav-item span{
+    font-size:22px;
+    margin-bottom:4px;
+}
+
+.nav-item.active{
+    color:#6c3ef4;
+    font-weight:600;
+}
+
+/* Responsive */
+
+@media(max-width:768px){
+
+.orders-page{
+    width:95%;
+}
+
+.table-header{
+    display:none;
+}
+
+.order-row{
+    grid-template-columns:1fr;
+    gap:10px;
+    padding:18px;
+}
+
+.status{
+    width:fit-content;
+}
+
+.view-btn{
+    text-align:left;
+}
+
+}

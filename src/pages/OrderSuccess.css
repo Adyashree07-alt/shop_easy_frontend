@@ -1,0 +1,136 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Poppins",sans-serif;
+}
+
+body{
+    background:#f5f5fb;
+}
+
+.success-page{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    padding:30px;
+}
+
+.success-card{
+    width:450px;
+    background:#fff;
+    border-radius:15px;
+    padding:40px 35px;
+    text-align:center;
+    box-shadow:0 8px 25px rgba(0,0,0,.08);
+}
+
+/* Success Icon */
+
+.success-icon{
+    width:110px;
+    height:110px;
+    margin:0 auto 25px;
+    border-radius:50%;
+    background:#dff8e5;
+    color:#22c55e;
+    font-size:60px;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-weight:bold;
+}
+
+.success-card h1{
+    font-size:30px;
+    color:#333;
+    margin-bottom:10px;
+}
+
+.thank-you{
+    color:#777;
+    margin-bottom:30px;
+    font-size:16px;
+}
+
+/* Order Details */
+
+.order-details{
+    border:1px solid #e5e5e5;
+    border-radius:10px;
+    padding:20px;
+    margin-bottom:30px;
+}
+
+.detail-row{
+    display:flex;
+    justify-content:space-between;
+    margin:15px 0;
+    color:#555;
+}
+
+.detail-row strong{
+    color:#333;
+}
+
+/* Buttons */
+
+.primary-btn,
+.secondary-btn{
+    width:100%;
+    height:48px;
+    border-radius:8px;
+    font-size:16px;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.primary-btn{
+    background:#6c3ef4;
+    color:#fff;
+    border:none;
+    margin-bottom:15px;
+}
+
+.primary-btn:hover{
+    background:#5b30d8;
+}
+
+.secondary-btn{
+    background:#fff;
+    border:2px solid #ddd;
+    color:#555;
+}
+
+.secondary-btn:hover{
+    border-color:#6c3ef4;
+    color:#6c3ef4;
+}
+
+/* Responsive */
+
+@media(max-width:500px){
+
+.success-card{
+    width:100%;
+    padding:30px 20px;
+}
+
+.success-card h1{
+    font-size:24px;
+}
+
+.success-icon{
+    width:90px;
+    height:90px;
+    font-size:50px;
+}
+
+.detail-row{
+    flex-direction:column;
+    gap:5px;
+    text-align:left;
+}
+
+}

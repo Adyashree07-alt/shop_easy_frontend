@@ -1,0 +1,172 @@
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:"Poppins",sans-serif;
+}
+
+body{
+    background:#f5f5fb;
+}
+
+.upi-page{
+    width:90%;
+    max-width:1000px;
+    margin:40px auto;
+}
+
+/* Main Container */
+
+.payment-container{
+    display:flex;
+    gap:30px;
+    background:#fff;
+    border-radius:12px;
+    padding:30px;
+    box-shadow:0 5px 20px rgba(0,0,0,.08);
+}
+
+/* Left */
+
+.payment-method{
+    flex:1;
+    border-right:1px solid #eee;
+    padding-right:20px;
+}
+
+.payment-method h3{
+    margin-bottom:20px;
+    color:#333;
+}
+
+.radio-option{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:20px;
+    cursor:pointer;
+    color:#555;
+}
+
+.radio-option input{
+    accent-color:#6c3ef4;
+    transform:scale(1.1);
+}
+
+/* Right */
+
+.upi-details{
+    flex:2;
+}
+
+.upi-details h3{
+    margin-bottom:20px;
+    color:#333;
+}
+
+.input-group{
+    display:flex;
+    flex-direction:column;
+}
+
+.input-group label{
+    margin-bottom:8px;
+    color:#555;
+    font-size:14px;
+}
+
+.input-group input{
+    height:45px;
+    padding:0 15px;
+    border:1px solid #ddd;
+    border-radius:8px;
+    outline:none;
+    font-size:15px;
+}
+
+.input-group input:focus{
+    border-color:#6c3ef4;
+}
+
+.upi-example{
+    margin-top:10px;
+    color:#888;
+    font-size:13px;
+}
+
+/* Footer */
+
+.payment-footer{
+    margin-top:25px;
+    background:#fff;
+    border-radius:12px;
+    padding:25px;
+    box-shadow:0 5px 20px rgba(0,0,0,.08);
+}
+
+.amount{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:25px;
+}
+
+.amount span{
+    font-size:18px;
+    color:#555;
+}
+
+.amount h2{
+    color:#6c3ef4;
+    font-size:30px;
+}
+
+.place-order-btn{
+    width:100%;
+    height:50px;
+    border:none;
+    border-radius:8px;
+    background:#6c3ef4;
+    color:#fff;
+    font-size:17px;
+    font-weight:600;
+    cursor:pointer;
+    transition:.3s;
+}
+
+.place-order-btn:hover{
+    background:#5b2fd8;
+}
+
+.secure-text{
+    text-align:center;
+    margin-top:18px;
+    color:#777;
+    font-size:14px;
+}
+
+/* Responsive */
+
+@media(max-width:768px){
+
+.payment-container{
+    flex-direction:column;
+}
+
+.payment-method{
+    border-right:none;
+    border-bottom:1px solid #eee;
+    padding-right:0;
+    padding-bottom:20px;
+}
+
+.amount{
+    flex-direction:column;
+    gap:10px;
+}
+
+.amount h2{
+    font-size:26px;
+}
+
+}
