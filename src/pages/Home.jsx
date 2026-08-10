@@ -62,10 +62,13 @@ function Home() {
           Books: "📘",
           Grocery: "🛒",
           "Home & Kitchen": "🏠",
-          Beauty: "🧴",
+           Beauty: "💄",
           Shoes: "👟",
           Watch: "⌚",
           Decors: "🖼️",
+          Perfume: "🧴",
+          "Food items": "🍔",
+          Furniture: "🛋️",
         };
 
         const mapped = data.map((c) => ({

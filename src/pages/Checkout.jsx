@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Checkout.css";
 
 function Checkout() {
+  const navigate = useNavigate();
   const [fullName, setFullName] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
@@ -14,6 +16,8 @@ function Checkout() {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [grandTotal, setGrandTotal] = useState(null);
+  const [itemsCount, setItemsCount] = useState(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem("loggedInUser");
@@ -23,22 +27,39 @@ function Checkout() {
     if (!user?.userId) return;
 
     setUserId(user.userId);
+    const storedGrandTotal = localStorage.getItem("grandTotal");
+    if (storedGrandTotal) {
+      const parsedTotal = Number(JSON.parse(storedGrandTotal));
+      if (!Number.isNaN(parsedTotal)) {
+        setGrandTotal(parsedTotal);
+      }
+    }
+
+    const storedItemsCount = localStorage.getItem("cartItemsCount") || localStorage.getItem("cartItemCount");
+    if (storedItemsCount) {
+      const parsedCount = Number(JSON.parse(storedItemsCount));
+      if (!Number.isNaN(parsedCount)) {
+        setItemsCount(parsedCount);
+      }
+    }
+
     fetch(`http://localhost:8083/address/getAddressByUser/${user.userId}`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
       .then((data) => {
-        if (!Array.isArray(data) || data.length === 0) return;
-        const address = data[0];
-        setFullName(address.fullName || "");
-        setMobileNumber(address.mobileNumber || "");
-        setAddressLine1(address.addressLine1 || "");
-        setAddressLine2(address.addressLine2 || "");
+        const address = Array.isArray(data) ? data[0] : data;
+        if (!address) return;
+
+        setFullName(address.fullName || address.full_name || "");
+        setMobileNumber(address.mobileNumber || address.mobile_number || "");
+        setAddressLine1(address.addressLine1 || address.address_line1 || "");
+        setAddressLine2(address.addressLine2 || address.address_line2 || "");
         setCity(address.city || "");
-        setStateValue(address.state || "");
+        setStateValue(address.state || address.stateValue || "");
         setCountry(address.country || "India");
-        setPinCode(address.pinCode || "");
+        setPinCode(address.pinCode || address.pin_code || "");
       })
       .catch((err) => {
         console.error(err);
@@ -81,6 +102,7 @@ function Checkout() {
 
       const data = await response.json();
       setMessage(data.message || "Address saved successfully");
+      navigate("/checkout-upi");
     } catch (err) {
       setError(err.message || "Failed to save address.");
     } finally {
@@ -164,8 +186,8 @@ function Checkout() {
         <div className="summary">
           <h3>Order Summary</h3>
           <div className="summary-row">
-            <span>Items (3)</span>
-            <span>₹1,12,499</span>
+            <span>Items ({itemsCount ?? "—"})</span>
+            <span>₹{grandTotal != null ? (grandTotal - 100).toLocaleString() : "—"}</span>
           </div>
           <div className="summary-row">
             <span>Shipping</span>
@@ -174,7 +196,7 @@ function Checkout() {
           <hr />
           <div className="summary-row total">
             <span>Total Amount</span>
-            <span>₹1,12,599</span>
+            <span>₹{grandTotal != null ? grandTotal.toLocaleString() : "—"}</span>
           </div>
         </div>
       </div>
