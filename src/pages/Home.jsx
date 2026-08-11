@@ -49,7 +49,7 @@ function Home() {
     }
 
     let mounted = true;
-    fetch("http://localhost:8081/category/getAllCategory")
+    fetch("http://localhost:8085/category/getAllCategories")
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -145,7 +145,7 @@ function Home() {
           <li className="active">Home</li>
           <li>Products</li>
           <li>Categories</li>
-          <li>Orders</li>
+          <li><Link to="/my-orders">Orders</Link></li>
         </ul>
  
         <div className="nav-right">
@@ -272,7 +272,18 @@ function Home() {
  
           {products.map((product) => (
  
-            <div className="product-card" key={product.id}>
+            <div
+              className="product-card"
+              key={product.id}
+              onClick={() => navigate(`/product/${product.id}`)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  navigate(`/product/${product.id}`);
+                }
+              }}
+            >
  
               <img
                 src={product.image}
@@ -285,7 +296,12 @@ function Home() {
  
               <p className="rating">⭐ {product.rating} (90)</p>
  
-              <button onClick={() => handleAddToCart(product.id)}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddToCart(product.id);
+                }}
+              >
                 Add to Cart
               </button>
  

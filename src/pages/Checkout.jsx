@@ -77,7 +77,7 @@ function Checkout() {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8083/address/saveAddress", {
+      const response = await fetch("http://:8083/address/saveAddress", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

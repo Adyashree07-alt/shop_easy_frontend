@@ -7,6 +7,8 @@ function Cart() {
   const [cartData, setCartData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [cartMessage, setCartMessage] = useState(null);
+  const [cartError, setCartError] = useState(null);
   const [userId, setUserId] = useState(null);
 
   useEffect(() => {
@@ -76,12 +78,40 @@ function Cart() {
     navigate("/checkout");
   };
 
+  const handleRemoveItem = (cartItemId) => {
+    setCartMessage(null);
+    setError(null);
+
+    fetch(`http://localhost:8082/cart/removeItemFromCart/${cartItemId}`, {
+      method: "DELETE",
+    })
+      .then((res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`);
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setCartData((prev) => ({
+          ...prev,
+          items: prev?.items?.filter((item) => item.cartItemId !== cartItemId) || [],
+        }));
+        setCartMessage(data.message || "Item removed from cart.");
+      })
+      .catch((err) => {
+        setError(err.message || "Failed to remove item.");
+      });
+  };
+
   return (
     <div className="cart-page">
 
       <h2>
         Your Cart <span>({cartItems.length} items)</span>
       </h2>
+
+      {cartMessage && <div className="success-message">{cartMessage}</div>}
+      {cartError && <div className="error-message">{cartError}</div>}
 
       <div className="cart-table">
 
@@ -110,7 +140,9 @@ function Cart() {
 
             <div>₹{item.totalPrice.toLocaleString()}</div>
 
-            <button className="delete-btn">🗑️</button>
+            <button className="delete-btn" onClick={() => handleRemoveItem(item.cartItemId)}>
+              🗑️
+            </button>
 
           </div>
         ))}
