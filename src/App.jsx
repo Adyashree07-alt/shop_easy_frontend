@@ -11,6 +11,7 @@ import Payment from './pages/Payment'
 import OrderSuccess from './pages/OrderSuccess'
 import MyOrders from './pages/MyOrders'
 import CheckoutUPI from './pages/CheckoutUPI'
+import Products from "./pages/Products";
 
 const ProtectedRoute = ({ children }) => {
   const storedUser = localStorage.getItem('loggedInUser');
@@ -50,6 +51,7 @@ function App() {
         <Route path="/product-details" element={<ProductDetails />} />
         <Route path="/product/:id" element={<ProductDetails />} />
         <Route path="/cart" element={<Cart />} />
+        <Route path="/all-products" element={<Products />} />
         <Route
           path="/checkout"
           element={

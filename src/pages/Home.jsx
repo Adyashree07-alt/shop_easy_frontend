@@ -143,9 +143,9 @@ function Home() {
  
         <ul className="nav-links">
           <li className="active">Home</li>
-          <li>Products</li>
-          <li>Categories</li>
-          <li>Orders</li>
+          <li><Link to="/all-products">Products</Link></li>
+          <li><Link to="/categories">Categories</Link></li>
+          <li><Link to="/my-orders">Orders</Link></li>
         </ul>
  
         <div className="nav-right">
