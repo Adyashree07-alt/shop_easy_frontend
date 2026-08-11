@@ -22,7 +22,6 @@ const ProductDetails = () => {
       <div className="product-container">
 
         {/* Left Section */}
-
         <div className="product-images">
 
           <div className="main-image">
@@ -90,7 +89,7 @@ const ProductDetails = () => {
             onClick={() => {
               setCartMessage(null);
               setCartError(null);
-              fetch("http://localhost:8082/cart/addToCart", {
+              fetch("http://localhost:8083/api/cart/add", {
                 method: "POST",
                 headers: {
                   "Content-Type": "application/json",

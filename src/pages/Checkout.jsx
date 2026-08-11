@@ -23,7 +23,7 @@ function Checkout() {
     if (!user?.userId) return;
 
     setUserId(user.userId);
-    fetch(`http://localhost:8083/address/getAddressByUser/${user.userId}`)
+    fetch(`http://localhost:8084/api/address/user/${user.userId}`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();

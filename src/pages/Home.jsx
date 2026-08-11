@@ -49,7 +49,7 @@ function Home() {
     }
 
     let mounted = true;
-    fetch("http://localhost:8081/category/getAllCategory")
+    fetch("http://localhost:8080/api/categories")
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -104,7 +104,7 @@ function Home() {
       return;
     }
 
-    fetch("http://localhost:8082/cart/addToCart", {
+    fetch("http://localhost:8083/api/cart/add", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

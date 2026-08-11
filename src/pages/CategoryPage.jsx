@@ -16,7 +16,7 @@ const CategoryPage = () => {
   useEffect(() => {
     if (id) {
       setLoadingProducts(true);
-      fetch(`http://localhost:8081/products/getProductsByCategoryId/${id}`)
+      fetch(`http://localhost:8080/api/products/category/${id}`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
@@ -72,7 +72,7 @@ const CategoryPage = () => {
       return;
     }
 
-    fetch("http://localhost:8082/cart/addToCart", {
+    fetch("http://localhost:8083/api/cart/add", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

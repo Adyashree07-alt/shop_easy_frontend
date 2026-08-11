@@ -25,7 +25,7 @@ function Cart() {
     }
 
     setUserId(user.userId);
-    fetch(`http://localhost:8082/cart/getCartByUserId/${user.userId}`)
+    fetch(`http://localhost:8083/api/cart/user/${user.userId}`)
       .then((res) => {
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
