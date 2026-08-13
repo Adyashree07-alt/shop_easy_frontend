@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import "./CategoryPage.css";
 
 const CategoryPage = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [search, setSearch] = useState("");
 
@@ -16,7 +17,7 @@ const CategoryPage = () => {
   useEffect(() => {
     if (id) {
       setLoadingProducts(true);
-      fetch(`http://localhost:8081/products/getProductsByCategoryId/${id}`)
+      fetch(`http://localhost:8085/products/getProductsByCategoryId/${id}`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
@@ -33,7 +34,7 @@ const CategoryPage = () => {
     }
 
     // fallback: load categories for management view
-    fetch("http://localhost:8080/api/categories")
+    fetch("http://localhost:8085/category")
       .then((res) => res.json())
       .then((data) => setCategories(data))
       .catch((err) => console.log(err));
@@ -45,7 +46,7 @@ const CategoryPage = () => {
 
   const handleDelete = (idToDelete) => {
     if (window.confirm("Delete this category?")) {
-      fetch(`http://localhost:8080/api/categories/${idToDelete}`, {
+      fetch(`http://localhost:8085/category/${idToDelete}`, {
         method: "DELETE",
       })
         .then(() => {
@@ -115,12 +116,28 @@ const CategoryPage = () => {
             {cartMessage && <div className="success-message">{cartMessage}</div>}
             {cartError && <div className="error-message">{cartError}</div>}
             {products.map((p) => (
-              <div className="product-card" key={p.productId}>
+              <div
+                className="product-card"
+                key={p.productId}
+                onClick={() => navigate(`/product/${p.productId}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    navigate(`/product/${p.productId}`);
+                  }
+                }}
+              >
                 <img src={p.imageUrl} alt={p.productName} />
                 <h4>{p.productName}</h4>
                 <p className="price">₹{p.price}</p>
                 <p className="brand">{p.brand}</p>
-                <button onClick={() => handleAddToCart(p.productId)}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddToCart(p.productId);
+                  }}
+                >
                   Add to Cart
                 </button>
               </div>

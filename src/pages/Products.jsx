@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "./Products.css";
 
-const API_URL = "http://localhost:8081/products/getAllProducts";
+const API_URL = "http://localhost:8085/products/getAllProduct";
 
 function Products() {
   const [products, setProducts] = useState([]);
