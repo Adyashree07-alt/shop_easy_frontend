@@ -23,7 +23,7 @@ function Checkout() {
     if (!user?.userId) return;
 
     setUserId(user.userId);
-    fetch(`http://localhost:8084/api/address/user/${user.userId}`)
+    fetch(`http://localhost:8085/api/address/user/${user.userId}`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
@@ -56,7 +56,7 @@ function Checkout() {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8083/address/saveAddress", {
+      const response = await fetch("http://localhost:8085/address/saveAddress", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
