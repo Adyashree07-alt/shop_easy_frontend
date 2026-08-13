@@ -29,7 +29,7 @@ function Cart() {
     fetch(`http://localhost:8082/cart/getCartByUserId/${user.userId}`)
       .then((res) => {
         if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+          throw new Error(`Your cart is empty`);
         }
         return res.json();
       })
