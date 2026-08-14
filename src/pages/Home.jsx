@@ -382,27 +382,39 @@ function Home() {
 </div>
 
       {/* Hero */}
-<section className="hero">
-<div className="hero-text">
-<h2>Summer Sale is Live!</h2>
-<p>
-
+ 
+      {/* <section className="hero">
+ 
+        <div className="hero-text">
+ 
+          <h2>Summer Sale is Live!</h2>
+ 
+          <p>
             Up to <strong>50% Off</strong> on
 <br />
 
             Electronics
-</p>
-<button>Shop Now</button>
-</div>
-<img
-
-          src="https://via.placeholder.com/380x220?text=Electronics"
-
-          alt="Banner"
-
+          </p>
+ 
+          <button>Shop Now</button>
+ 
+        </div>
+ 
+        <img
+          src="/banner.png"
+          alt="Summer sale banner"
+          loading="lazy"
         />
-</section>
-
+ 
+      </section> */}
+       <section className="section">
+       <img
+          src="/banner.png"
+          alt="Summer sale banner"
+          loading="lazy"
+          style={{ width: "100%" }}
+        />
+         </section>
       {/* Categories */}
 <section className="section">
 <div className="section-title">

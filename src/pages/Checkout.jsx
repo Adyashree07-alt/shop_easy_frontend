@@ -77,7 +77,7 @@ function Checkout() {
 
     setLoading(true);
     try {
-      const response = await fetch("http://:8083/address/saveAddress", {
+      const response = await fetch("http://localhost:8083/address/saveAddress", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -102,7 +102,7 @@ function Checkout() {
 
       const data = await response.json();
       setMessage(data.message || "Address saved successfully");
-      navigate("/checkout-upi");
+      navigate("/payment");
     } catch (err) {
       setError(err.message || "Failed to save address.");
     } finally {
