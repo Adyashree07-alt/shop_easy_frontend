@@ -195,7 +195,7 @@ function Home() {
  
       {/* Hero */}
  
-      <section className="hero">
+      {/* <section className="hero">
  
         <div className="hero-text">
  
@@ -212,12 +212,20 @@ function Home() {
         </div>
  
         <img
-          src="https://via.placeholder.com/380x220?text=Electronics"
-          alt="Banner"
+          src="/banner.png"
+          alt="Summer sale banner"
+          loading="lazy"
         />
  
-      </section>
- 
+      </section> */}
+       <section className="section">
+       <img
+          src="/banner.png"
+          alt="Summer sale banner"
+          loading="lazy"
+          style={{ width: "100%" }}
+        />
+         </section>
       {/* Categories */}
  
       <section className="section">
