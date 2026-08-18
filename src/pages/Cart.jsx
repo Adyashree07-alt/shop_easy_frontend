@@ -154,11 +154,71 @@ function Cart() {
 </div>
 <div>₹{item.price.toLocaleString()}</div>
 <div className="qty-box">
-<button>-</button>
+<button
+  onClick={() => {
+    /* Decrease quantity (not fully implemented on backend) */
+    if (item.quantity <= 1) return;
+    const prev = cartData;
+    setCartData((p) => ({
+      ...p,
+      items: p.items.map((it) =>
+        it.cartItemId === item.cartItemId
+          ? { ...it, quantity: it.quantity - 1, totalPrice: (it.price * (it.quantity - 1)) }
+          : it
+      ),
+    }));
+    // Optional: call backend to decrease quantity if API exists
+  }}
+>
+  -
+</button>
 <span>{item.quantity}</span>
-<button>+</button>
+<button
+  onClick={() => {
+    // Increase quantity optimistically and notify backend
+    setCartMessage(null);
+    setCartError(null);
+    const prevCart = cartData;
+    // update UI immediately
+    setCartData((p) => ({
+      ...p,
+      items: p.items.map((it) =>
+        it.cartItemId === item.cartItemId
+          ? { ...it, quantity: it.quantity + 1, totalPrice: it.price * (it.quantity + 1) }
+          : it
+      ),
+    }));
+
+    // update local storage count if present
+    try {
+      const count = JSON.parse(localStorage.getItem('cartItemsCount') || '0');
+      localStorage.setItem('cartItemsCount', JSON.stringify(Number(count) + 1));
+    } catch (e) {}
+
+    // call backend: reuse addToCart to increment quantity
+    fetch('http://localhost:8082/cart/addToCart', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: userId, productId: item.productId, quantity: 1 }),
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        setCartMessage(data.message || 'Quantity updated');
+      })
+      .catch((err) => {
+        // revert on error
+        setCartData(prevCart);
+        setCartError(err.message || 'Failed to update quantity');
+      });
+  }}
+>
+  +
+</button>
 </div>
-<div>₹{item.totalPrice.toLocaleString()}</div>
+<div>₹{(item.totalPrice || (item.price * item.quantity)).toLocaleString()}</div>
 <button className="delete-btn" onClick={() => handleRemoveItem(item.cartItemId)}>🗑️</button>
 </div>
           ))}

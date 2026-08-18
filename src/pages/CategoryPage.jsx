@@ -2,59 +2,121 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import "./CategoryPage.css";
 
+const iconMap = {
+  Electronics: "💻",
+  Fashion: "👕",
+  Books: "📘",
+  Grocery: "🛒",
+  "Home & Kitchen": "🏠",
+  Beauty: "💄",
+  Shoes: "👟",
+  Watch: "⌚",
+  Decors: "🖼️",
+  Perfume: "🧴",
+  "Food items": "🍔",
+  Furniture: "🛋️",
+};
+
 const CategoryPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [categories, setCategories] = useState([]);
-  const [search, setSearch] = useState("");
 
+  const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [productsByCategory, setProductsByCategory] = useState({});
+  const [search, setSearch] = useState("");
+  const [loadingCategories, setLoadingCategories] = useState(false);
   const [loadingProducts, setLoadingProducts] = useState(false);
-  const [prodError, setProdError] = useState(null);
+  const [error, setError] = useState(null);
   const [cartMessage, setCartMessage] = useState(null);
   const [cartError, setCartError] = useState(null);
 
   useEffect(() => {
+    let active = true;
+
     if (id) {
       setLoadingProducts(true);
+      setError(null);
+
       fetch(`http://localhost:8085/products/getProductsByCategoryId/${id}`)
         .then((res) => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json();
         })
         .then((data) => {
-          setProducts(data);
-          setLoadingProducts(false);
+          if (!active) return;
+          setProducts(Array.isArray(data) ? data : []);
         })
         .catch((err) => {
-          setProdError(err.message);
-          setLoadingProducts(false);
+          if (!active) return;
+          setError(err.message || "Failed to load products");
+        })
+        .finally(() => {
+          if (active) setLoadingProducts(false);
         });
-      return;
+
+      return () => {
+        active = false;
+      };
     }
 
-    // fallback: load categories for management view
-    fetch("http://localhost:8085/category")
-      .then((res) => res.json())
-      .then((data) => setCategories(data))
-      .catch((err) => console.log(err));
+    setLoadingCategories(true);
+    setError(null);
+
+    fetch("http://localhost:8085/category/getAllCategories")
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then(async (data) => {
+        if (!active) return;
+
+        const mapped = (Array.isArray(data) ? data : []).map((cat) => ({
+          id: cat.categoryId,
+          name: cat.categoryName,
+          description: cat.description || "Explore products in this category.",
+          icon: iconMap[cat.categoryName] || "📦",
+        }));
+
+        setCategories(mapped);
+
+        const mappedProducts = {};
+        for (const category of mapped) {
+          try {
+            const res = await fetch(
+              `http://localhost:8085/products/getProductsByCategoryId/${category.id}`
+            );
+            if (!res.ok) {
+              mappedProducts[category.id] = [];
+              continue;
+            }
+            const result = await res.json();
+            mappedProducts[category.id] = Array.isArray(result) ? result.slice(0, 4) : [];
+          } catch {
+            mappedProducts[category.id] = [];
+          }
+        }
+
+        if (active) {
+          setProductsByCategory(mappedProducts);
+        }
+      })
+      .catch((err) => {
+        if (!active) return;
+        setError(err.message || "Failed to load categories");
+      })
+      .finally(() => {
+        if (active) setLoadingCategories(false);
+      });
+
+    return () => {
+      active = false;
+    };
   }, [id]);
 
   const filteredCategories = categories.filter((category) =>
-    category.categoryName.toLowerCase().includes(search.toLowerCase())
+    category.name.toLowerCase().includes(search.toLowerCase())
   );
-
-  const handleDelete = (idToDelete) => {
-    if (window.confirm("Delete this category?")) {
-      fetch(`http://localhost:8085/category/${idToDelete}`, {
-        method: "DELETE",
-      })
-        .then(() => {
-          setCategories(categories.filter((cat) => cat.categoryId !== idToDelete));
-        })
-        .catch((err) => console.log(err));
-    }
-  };
 
   const handleAddToCart = (productId, quantity = 1) => {
     setCartMessage(null);
@@ -96,19 +158,18 @@ const CategoryPage = () => {
       });
   };
 
-  // If a category id is present, show products for that category
   if (id) {
     return (
       <div className="category-products">
         <div className="category-products-header">
           <h2>Products</h2>
-          <Link to="/">← Back to Home</Link>
+          <Link to="/category">← Back to Categories</Link>
         </div>
 
         {loadingProducts ? (
           <p>Loading products...</p>
-        ) : prodError ? (
-          <p className="error">Error: {prodError}</p>
+        ) : error ? (
+          <p className="error">Error: {error}</p>
         ) : products.length === 0 ? (
           <p>No products found for this category.</p>
         ) : (
@@ -118,24 +179,24 @@ const CategoryPage = () => {
             {products.map((p) => (
               <div
                 className="product-card"
-                key={p.productId}
-                onClick={() => navigate(`/product/${p.productId}`)}
+                key={p.productId || p.id}
+                onClick={() => navigate(`/product/${p.productId || p.id}`)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" || event.key === " ") {
-                    navigate(`/product/${p.productId}`);
+                    navigate(`/product/${p.productId || p.id}`);
                   }
                 }}
               >
-                <img src={p.imageUrl} alt={p.productName} />
-                <h4>{p.productName}</h4>
+                <img src={p.imageUrl || p.image} alt={p.productName || p.name} />
+                <h4>{p.productName || p.name}</h4>
                 <p className="price">₹{p.price}</p>
-                <p className="brand">{p.brand}</p>
+                {p.brand && <p className="brand">{p.brand}</p>}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    handleAddToCart(p.productId);
+                    handleAddToCart(p.productId || p.id);
                   }}
                 >
                   Add to Cart
@@ -148,14 +209,11 @@ const CategoryPage = () => {
     );
   }
 
-  // Management view when no id param
   return (
-    <div className="category-container">
-
+    <div className="categories-page">
       <div className="category-header">
-        <h2>Category Management</h2>
-
-        <button className="add-btn">+ Add Category</button>
+        <h2>Categories</h2>
+        <Link to="/">← Back to Home</Link>
       </div>
 
       <div className="search-section">
@@ -167,46 +225,71 @@ const CategoryPage = () => {
         />
       </div>
 
-      <table className="category-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Category Name</th>
-            <th>Description</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
+      {loadingCategories ? (
+        <p>Loading categories...</p>
+      ) : error ? (
+        <p className="error">Error: {error}</p>
+      ) : (
+        <div className="category-sections">
+          {filteredCategories.map((category) => (
+            <section key={category.id} className="category-section">
+              <div
+                className="category-section-header"
+                onClick={() => navigate(`/category/${category.id}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    navigate(`/category/${category.id}`);
+                  }
+                }}
+              >
+                <div className="section-title-wrap">
+                  <span className="icon">{category.icon}</span>
+                  <div>
+                    <h3>{category.name}</h3>
+                    <p>{category.description}</p>
+                  </div>
+                </div>
+                <button className="view-all-btn">View all</button>
+              </div>
 
-        <tbody>
-          {filteredCategories.length === 0 ? (
-            <tr>
-              <td colSpan="4" className="no-data">
-                No Categories Found
-              </td>
-            </tr>
-          ) : (
-            filteredCategories.map((category) => (
-              <tr key={category.categoryId}>
-                <td>{category.categoryId}</td>
-                <td>{category.categoryName}</td>
-                <td>{category.description}</td>
+              <div className="category-products-sample">
+                {(productsByCategory[category.id] || []).length === 0 ? (
+                  <p className="no-products">No products available.</p>
+                ) : (
+                  <div className="products-row">
+                    {(productsByCategory[category.id] || []).map((product) => {
+                      const productId = product.productId || product.id;
+                      const productName = product.productName || product.name;
+                      const productImage = product.imageUrl || product.image;
 
-                <td>
-                  <button className="edit-btn">Edit</button>
-
-                  <button
-                    className="delete-btn"
-                    onClick={() => handleDelete(category.categoryId)}
-                  >
-                    Delete
-                  </button>
-
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+                      return (
+                        <div
+                          key={productId}
+                          className="sample-product"
+                          onClick={() => navigate(`/product/${productId}`)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              navigate(`/product/${productId}`);
+                            }
+                          }}
+                        >
+                          <img src={productImage} alt={productName} />
+                          <div className="p-name">{productName}</div>
+                          <div className="p-price">₹{product.price || product.productPrice || product.cost || 0}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </section>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

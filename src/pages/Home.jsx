@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+
+import React, { useEffect, useState, useRef } from "react";
 
 import { Link, useNavigate } from "react-router-dom";
 
@@ -85,6 +86,40 @@ function Home() {
   const [user, setUser] = useState(null);
 
   const navigate = useNavigate();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState(null);
+  const [searchPerformed, setSearchPerformed] = useState(false);
+  const searchTimeoutRef = useRef(null);
+  const abortControllerRef = useRef(null);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestionsHideTimeoutRef = useRef(null);
+
+    // Carousel state for home banners
+    const carouselImages = ['/banner.png', '/banner1.png', '/banner2.png', '/banner3.png'];
+    const [carouselIndex, setCarouselIndex] = useState(0);
+    const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+    const carouselIntervalRef = useRef(null);
+
+
+    const nextSlide = () => setCarouselIndex((i) => (i + 1) % carouselImages.length);
+    const prevSlide = () => setCarouselIndex((i) => (i - 1 + carouselImages.length) % carouselImages.length);
+    const goToSlide = (idx) => setCarouselIndex(idx);
+
+    useEffect(() => {
+      // set up automatic sliding
+      if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
+      if (!isCarouselPaused) {
+        carouselIntervalRef.current = setInterval(() => {
+          setCarouselIndex((i) => (i + 1) % carouselImages.length);
+        }, 5000);
+      }
+
+      return () => {
+        if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
+      };
+    }, [isCarouselPaused]);
 
   useEffect(() => {
 
@@ -310,6 +345,93 @@ function Home() {
 
   };
 
+  const performSearch = (term) => {
+    setSearchPerformed(true);
+
+    if (!term) {
+      // If no term provided, show all currently loaded products (flattened),
+      // or empty array if nothing loaded yet.
+      const all = Object.values(productsByCategory).reduce((acc, arr) => {
+        if (Array.isArray(arr)) acc.push(...arr);
+        return acc;
+      }, []);
+      if (all.length > 0) {
+        setSearchResults(all);
+        setShowSuggestions(false);
+        setIsSearching(false);
+        setSearchError(null);
+        return;
+      }
+      // fallback: clear results
+      setSearchResults([]);
+      setIsSearching(false);
+      setSearchError(null);
+      setShowSuggestions(false);
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchError(null);
+
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    fetch("http://localhost:8085/products/getAllProduct", { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        const items = Array.isArray(data) ? data : data.products || [];
+        const q = term.toLowerCase();
+        const filtered = items.filter((p) => {
+          const name = (p.productName || p.name || "").toString().toLowerCase();
+          const desc = (p.description || p.productDescription || "").toString().toLowerCase();
+          const brand = (p.brand || p.manufacturer || "").toString().toLowerCase();
+          return (
+            (name && name.includes(q)) ||
+            (desc && desc.includes(q)) ||
+            (brand && brand.includes(q))
+          );
+        });
+        setSearchResults(filtered);
+        setShowSuggestions(true);
+        setIsSearching(false);
+        setSearchError(null);
+      })
+      .catch((err) => {
+        if (err.name === "AbortError") return;
+        setSearchError(err.message || "Search failed");
+        setIsSearching(false);
+      });
+  };
+
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    if (!searchTerm) {
+      // clear results when input emptied
+      setSearchResults([]);
+      setIsSearching(false);
+      setSearchError(null);
+      return;
+    }
+
+    // debounce
+    searchTimeoutRef.current = setTimeout(() => {
+      performSearch(searchTerm);
+    }, 300);
+
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
+  }, [searchTerm]);
+
   return (
 <div className="home">
 
@@ -370,16 +492,159 @@ function Home() {
 </nav>
 
       {/* Search */}
-<div className="search-bar">
-<input
-
+      <div
+        className="search-bar"
+        style={{ position: "relative" }}
+      >
+        <input
           type="text"
-
           placeholder="Search products, categories..."
-
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          onFocus={() => {
+            if (searchResults.length > 0) setShowSuggestions(true);
+          }}
+          onBlur={() => {
+            // delay hiding so clicks on suggestions register
+            suggestionsHideTimeoutRef.current = setTimeout(() => setShowSuggestions(false), 150);
+          }}
+          aria-label="Search products"
         />
-<button>Search</button>
-</div>
+
+        <button
+          onClick={() => {
+            if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+            performSearch(searchTerm);
+            setShowSuggestions(true);
+          }}
+        >
+          Search
+        </button>
+
+        {showSuggestions && (searchResults.length > 0 || isSearching || searchError) && (
+          <div
+            className="search-suggestions"
+            style={{
+              position: "absolute",
+              top: "calc(100% + 6px)",
+              left: 0,
+              right: 0,
+              background: "#fff",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
+              zIndex: 50,
+              maxHeight: 320,
+              overflowY: "auto",
+              borderRadius: 6,
+              padding: 8,
+            }}
+            onMouseDown={() => {
+              // prevent blur-hide race
+              if (suggestionsHideTimeoutRef.current) {
+                clearTimeout(suggestionsHideTimeoutRef.current);
+                suggestionsHideTimeoutRef.current = null;
+              }
+            }}
+          >
+            {isSearching && <div className="suggestion-item">Searching...</div>}
+            {searchError && <div className="suggestion-item">Error: {searchError}</div>}
+            {searchResults.map((p) => {
+              const pid = p.productId || p.id;
+              const title = p.productName || p.name || p.brand || "Product";
+              const price = p.price || p.cost || "";
+              return (
+                <div
+                  key={pid}
+                  className="suggestion-item"
+                  style={{ padding: "8px 10px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
+                  onMouseDown={(e) => {
+                    e.preventDefault();
+                    setShowSuggestions(false);
+                    setSearchTerm("");
+                    navigate(`/product/${pid}`);
+                  }}
+                >
+                  <div style={{ fontSize: 14 }}>{title}</div>
+                  {price && <div style={{ fontSize: 13, color: "#666" }}>{price}</div>}
+                </div>
+              );
+            })}
+            {!isSearching && searchResults.length === 0 && !searchError && (
+              <div className="suggestion-item">No results</div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {searchPerformed && (
+        <section className="section">
+          <div className="section-title" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h3>
+              Search Results{searchTerm ? (
+                <span> for '{searchTerm}'</span>
+              ) : (
+                <span> (all products)</span>
+              )}
+            </h3>
+            <div>
+              <button
+                onClick={() => {
+                  setSearchPerformed(false);
+                  setSearchTerm("");
+                  setSearchResults([]);
+                  setShowSuggestions(false);
+                }}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          {isSearching ? (
+            <p>Searching...</p>
+          ) : searchError ? (
+            <p className="error">Error: {searchError}</p>
+          ) : searchResults.length === 0 ? (
+            <p>No products found{searchTerm ? ` for '${searchTerm}'` : ""}</p>
+          ) : (
+            <div className="products">
+              {searchResults.map((product) => {
+                const pid = product.productId || product.id;
+                const image = product.image || product.imageUrl || "https://via.placeholder.com/180x130?text=Product";
+                const price = product.price || product.cost || "N/A";
+                const rating = product.rating || product.avgRating || "-";
+                return (
+                  <div
+                    className="product-card"
+                    key={`search-${pid}`}
+                    onClick={() => navigate(`/product/${pid}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        navigate(`/product/${pid}`);
+                      }
+                    }}
+                  >
+                    <img src={image} alt={product.productName || "Product"} />
+                    <h4>{product.productName || product.brand}</h4>
+                    <p className="price">{price}</p>
+                    <p className="rating">⭐ {rating} ({product.reviewsCount || 0})</p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddToCart(pid);
+                      }}
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+ 
 
       {/* Hero */}
  
@@ -407,14 +672,40 @@ function Home() {
         />
  
       </section> */}
-       <section className="section">
-       <img
-          src="/banner.png"
-          alt="Summer sale banner"
-          loading="lazy"
-          style={{ width: "100%" }}
-        />
-         </section>
+      {/* Banner carousel */}
+      <section className="section">
+        <div
+          className="carousel"
+          onMouseEnter={() => setIsCarouselPaused(true)}
+          onMouseLeave={() => setIsCarouselPaused(false)}
+        >
+          <div className="carousel-slides">
+            {carouselImages.map((src, idx) => (
+              <img
+                key={src}
+                src={src}
+                alt={`Banner ${idx + 1}`}
+                className={`carousel-slide ${carouselIndex === idx ? 'active' : ''}`}
+                loading="lazy"
+              />
+            ))}
+          </div>
+
+          <button className="carousel-prev" onClick={() => prevSlide()} aria-label="Previous banner">←</button>
+          <button className="carousel-next" onClick={() => nextSlide()} aria-label="Next banner">→</button>
+
+          <div className="carousel-dots">
+            {carouselImages.map((_, idx) => (
+              <button
+                key={idx}
+                className={`dot ${carouselIndex === idx ? 'active' : ''}`}
+                onClick={() => goToSlide(idx)}
+                aria-label={`Go to banner ${idx + 1}`}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
       {/* Categories */}
 <section className="section">
 <div className="section-title">
@@ -446,6 +737,7 @@ function Home() {
             ))
 
           )}
+
 </div>
 </section>
 
@@ -541,6 +833,7 @@ function Home() {
                 )}
 </div>
 </section>
+
 
           ))}
 </>
