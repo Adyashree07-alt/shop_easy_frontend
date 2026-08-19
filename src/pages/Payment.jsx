@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Payment.css";
+import Navbar from "../components/Navbar";
+
 
 function Payment() {
   const navigate = useNavigate();
@@ -94,6 +96,8 @@ function Payment() {
   };
 
   return (
+    <>
+    <Navbar />
     <div className="payment-page">
 
       <div className="payment-container">
@@ -168,6 +172,7 @@ function Payment() {
       </div>
 
     </div>
+    </>
   );
 }
 
