@@ -73,8 +73,8 @@ body{
 }
 
 .processing{
-    background:#ffe7c2;
-    color:#d88700;
+    background:white;
+    color:grey;
 }
 
 .cancelled{

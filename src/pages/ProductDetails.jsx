@@ -154,7 +154,6 @@ const ProductDetails = () => {
             <li>Category: {product?.categoryName}</li>
             <li>Stock Quantity: {product?.stockQuantity}</li>
             <li>Status: {product?.status}</li>
-            <li>Product ID: {product?.productId}</li>
           </ul>
 
           <div className="quantity">

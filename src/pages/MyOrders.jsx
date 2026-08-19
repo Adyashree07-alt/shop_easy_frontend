@@ -55,6 +55,15 @@ function MyOrders() {
     }
   };
 
+  const getStatusDisplay = (status) => {
+    if (!status) return { label: "ORDER PLACED", cls: "processing" };
+    const up = String(status).toUpperCase();
+    // Treat backend 'DELIVERED' as initial 'ORDER PLACED' when showing list
+    if (up === "DELIVERED") return { label: "ORDER PLACED", cls: "processing" };
+    // Use the status text as label and the lowercase key for CSS class
+    return { label: up === status ? status : String(status), cls: String(status).toLowerCase() };
+  };
+
   return (
     <div className="orders-page">
 
@@ -82,9 +91,16 @@ function MyOrders() {
               <span>#{order.orderId}</span>
               <span>{formatDate(order.orderDate)}</span>
               <span>{formatAmount(order.totalAmount)}</span>
-              <span className={`status ${order.orderStatus.toLowerCase()}`}>
-                {order.orderStatus}
-              </span>
+              {
+                (() => {
+                  const { label, cls } = getStatusDisplay(order.orderStatus);
+                  return (
+                    <span className={`status ${cls}`}>
+                      {label}
+                    </span>
+                  );
+                })()
+              }
               <span>{order.paymentType}</span>
             </div>
           ))}

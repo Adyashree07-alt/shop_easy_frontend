@@ -73,9 +73,9 @@ function Home() {
 
   const [catError, setCatError] = useState(null);
 
-  const [cartMessage, setCartMessage] = useState(null);
+  const [cartMessages, setCartMessages] = useState({}); // map of productId -> message
 
-  const [cartError, setCartError] = useState(null);
+  const [cartErrors, setCartErrors] = useState({}); // map of productId -> error
 
   const [productsByCategory, setProductsByCategory] = useState({});
 
@@ -303,29 +303,24 @@ function Home() {
   }, []);
 
   const handleAddToCart = (productId, quantity = 1) => {
-
-    setCartMessage(null);
-
-    setCartError(null);
+    // clear only messages for this product
+    setCartMessages((m) => { const copy = { ...m }; delete copy[productId]; return copy; });
+    setCartErrors((m) => { const copy = { ...m }; delete copy[productId]; return copy; });
 
     const storedUser = localStorage.getItem("loggedInUser");
 
     if (!storedUser) {
-
-      setCartError("Please login to add items to cart.");
-
+      setCartErrors((m) => ({ ...m, [productId]: "Please login to add items to cart." }));
+      setTimeout(() => setCartErrors((m) => { const c = { ...m }; delete c[productId]; return c; }), 3000);
       return;
-
     }
 
     const user = JSON.parse(storedUser);
 
     if (!user?.userId) {
-
-      setCartError("Please login to add items to cart.");
-
+      setCartErrors((m) => ({ ...m, [productId]: "Please login to add items to cart." }));
+      setTimeout(() => setCartErrors((m) => { const c = { ...m }; delete c[productId]; return c; }), 3000);
       return;
-
     }
 
     fetch("http://localhost:8082/cart/addToCart", {
@@ -385,14 +380,15 @@ function Home() {
           });
         }
 
-        setCartMessage(data.message || "Product added to cart.");
+        setCartMessages((m) => ({ ...m, [productId]: data.message || "Product added to cart." }));
+        // clear message after 3s
+        setTimeout(() => setCartMessages((m) => { const c = { ...m }; delete c[productId]; return c; }), 3000);
 
       })
 
       .catch((err) => {
-
-        setCartError(err.message || "Failed to add to cart.");
-
+        setCartErrors((m) => ({ ...m, [productId]: err.message || "Failed to add to cart." }));
+        setTimeout(() => setCartErrors((m) => { const c = { ...m }; delete c[productId]; return c; }), 3000);
       });
 
   };
@@ -871,8 +867,7 @@ function Home() {
                   <Link to={`/category/${category.id}`} className="view-all">View All</Link>
                 </div>
 
-                {cartMessage && <div className="success-message">{cartMessage}</div>}
-                {cartError && <div className="error-message">{cartError}</div>}
+                {/* per-product messages are shown inline on each card */}
 
                 <div className="category-carousel">
                   <button
@@ -954,6 +949,12 @@ function Home() {
                                       >
                                         Add to Cart
                                       </button>
+                                      {cartMessages[pid] && (
+                                        <div className="success-message" style={{ marginTop: 8 }}>{cartMessages[pid]}</div>
+                                      )}
+                                      {cartErrors[pid] && (
+                                        <div className="error-message" style={{ marginTop: 8 }}>{cartErrors[pid]}</div>
+                                      )}
                                     </div>
                                   </div>
                                 );

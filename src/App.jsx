@@ -6,6 +6,7 @@ import Signup from './pages/Signup'
 import Home from './pages/Home'
 import ProductDetails from './pages/ProductDetails'
 import CategoryPage from './pages/CategoryPage'
+import ScrollToTop from './components/ScrollToTop'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Payment from './pages/Payment'
@@ -92,6 +93,7 @@ function App() {
 
   return (
     <div className={`app-shell ${darkMode ? 'dark-mode' : ''}`}>
+      <ScrollToTop />
       <button
         type="button"
         className="theme-toggle"
