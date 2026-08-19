@@ -12,6 +12,8 @@ import OrderSuccess from './pages/OrderSuccess'
 import MyOrders from './pages/MyOrders'
 import CheckoutUPI from './pages/CheckoutUPI'
 import Products from "./pages/Products";
+import EventPlanner from "./pages/EventPlanner";
+import ShopEasy from './pages/ShopEasy'
 
 const ProtectedRoute = ({ children }) => {
   const storedUser = localStorage.getItem('loggedInUser');
@@ -63,6 +65,8 @@ function App() {
         <Route path="/order-success" element={<OrderSuccess />} />
         <Route path="/my-orders" element={<MyOrders />} />
         <Route path="/checkout-upi" element={<CheckoutUPI />} />
+        <Route path="/EventPlanner" element={<EventPlanner />} />
+        <Route path="/ShopEasy" element={<ShopEasy />} />
       </Routes>
     </>
   )

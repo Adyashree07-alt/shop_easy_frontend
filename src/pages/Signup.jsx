@@ -65,7 +65,7 @@ const Signup = () => {
  
         <form className="signup-form" onSubmit={handleSubmit}>
           <div className="input-group">
-            <span className="icon">👤</span>
+            {/* <span className="icon">👤</span> */}
             <input
               type="text"
               placeholder="First Name"
@@ -75,7 +75,7 @@ const Signup = () => {
             />
           </div>
           <div className="input-group">
-            <span className="icon">👤</span>
+            {/* <span className="icon">👤</span> */}
             <input
               type="text"
               placeholder="Last Name"
@@ -85,7 +85,7 @@ const Signup = () => {
             />
           </div>
           <div className="input-group">
-            <span className="icon">✉️</span>
+            {/* <span className="icon">✉️</span> */}
             <input
               type="email"
               placeholder="Email"
@@ -95,7 +95,7 @@ const Signup = () => {
             />
           </div>
           <div className="input-group">
-            <span className="icon">📱</span>
+            {/* <span className="icon">📱</span> */}
             <input
               type="tel"
               placeholder="Mobile Number"
@@ -105,7 +105,7 @@ const Signup = () => {
             />
           </div>
           <div className="input-group">
-            <span className="icon">🔒</span>
+            {/* <span className="icon">🔒</span> */}
             <input
               type="password"
               placeholder="Password"
