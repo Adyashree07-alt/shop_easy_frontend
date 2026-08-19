@@ -35,7 +35,7 @@ function Checkout() {
       }
     }
 
-    const storedItemsCount = localStorage.getItem("cartItemsCount") || localStorage.getItem("cartItemCount");
+    const storedItemsCount = localStorage.getItem("shopEasyCartCount") || localStorage.getItem("cartItemsCount") || localStorage.getItem("cartItemCount");
     if (storedItemsCount) {
       const parsedCount = Number(JSON.parse(storedItemsCount));
       if (!Number.isNaN(parsedCount)) {

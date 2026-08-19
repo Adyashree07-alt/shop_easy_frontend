@@ -1,9 +1,9 @@
-
 import React, { useEffect, useState, useRef } from "react";
 
 import { Link, useNavigate } from "react-router-dom";
 
 import "./Home.css";
+import Navbar from "../components/Navbar";
 
 const products = [
 
@@ -85,7 +85,18 @@ function Home() {
 
   const [user, setUser] = useState(null);
 
+  // Cart count: total quantity across items
+  const [cartCount, setCartCount] = useState(() => {
+    try {
+      const c = localStorage.getItem("shopEasyCartCount");
+      return c ? parseInt(c, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
   const navigate = useNavigate();
+  const categoryRowRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -96,30 +107,44 @@ function Home() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsHideTimeoutRef = useRef(null);
 
-    // Carousel state for home banners
-    const carouselImages = ['/banner.png', '/banner1.png', '/banner2.png', '/banner3.png'];
-    const [carouselIndex, setCarouselIndex] = useState(0);
-    const [isCarouselPaused, setIsCarouselPaused] = useState(false);
-    const carouselIntervalRef = useRef(null);
+  // category carousel offsets per category id
+  const [catOffsets, setCatOffsets] = useState({});
+  // visible count depends on screen size: desktop 4, tablet 3, mobile 1-2
+  const [visibleCount, setVisibleCount] = useState(4);
+
+  // Carousel state for home banners
+  const carouselImages = ['/banner.png', '/banner1.png', '/banner2.png', '/banner3.png'];
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const [isCarouselPaused, setIsCarouselPaused] = useState(false);
+  const carouselIntervalRef = useRef(null);
 
 
-    const nextSlide = () => setCarouselIndex((i) => (i + 1) % carouselImages.length);
-    const prevSlide = () => setCarouselIndex((i) => (i - 1 + carouselImages.length) % carouselImages.length);
-    const goToSlide = (idx) => setCarouselIndex(idx);
+  const nextSlide = () => setCarouselIndex((i) => (i + 1) % carouselImages.length);
+  const prevSlide = () => setCarouselIndex((i) => (i - 1 + carouselImages.length) % carouselImages.length);
+  const goToSlide = (idx) => setCarouselIndex(idx);
+  const scrollCategories = (direction) => {
+    const row = categoryRowRef.current;
+    if (!row) return;
+    const amount = row.clientWidth * 0.75;
+    row.scrollBy({
+      left: direction === 'left' ? -amount : amount,
+      behavior: 'smooth'
+    });
+  };
 
-    useEffect(() => {
-      // set up automatic sliding
+  useEffect(() => {
+    // set up automatic sliding
+    if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
+    if (!isCarouselPaused) {
+      carouselIntervalRef.current = setInterval(() => {
+        setCarouselIndex((i) => (i + 1) % carouselImages.length);
+      }, 3000);
+    }
+
+    return () => {
       if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
-      if (!isCarouselPaused) {
-        carouselIntervalRef.current = setInterval(() => {
-          setCarouselIndex((i) => (i + 1) % carouselImages.length);
-        }, 5000);
-      }
-
-      return () => {
-        if (carouselIntervalRef.current) clearInterval(carouselIntervalRef.current);
-      };
-    }, [isCarouselPaused]);
+    };
+  }, [isCarouselPaused]);
 
   useEffect(() => {
 
@@ -235,7 +260,8 @@ function Home() {
 
             results.forEach((items, idx) => {
 
-              map[mapped[idx].id] = sample(items, 4);
+              // store the full list of products for the category so carousel can navigate all items
+              map[mapped[idx].id] = Array.isArray(items) ? items : [];
 
             });
 
@@ -332,6 +358,31 @@ function Home() {
       })
 
       .then((data) => {
+        // If server returns cart or count use it, otherwise increment optimistically
+        try {
+          const serverCount = data?.cartTotalQuantity ?? data?.totalQuantity ?? data?.cart?.totalQuantity ?? null;
+          if (typeof serverCount === 'number') {
+            setCartCount(serverCount);
+            try { localStorage.setItem('shopEasyCartCount', String(serverCount)); } catch { }
+            window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: serverCount } }));
+          } else {
+            // optimistic increment
+            setCartCount((c) => {
+              const nc = c + quantity;
+              try { localStorage.setItem('shopEasyCartCount', String(nc)); } catch { }
+              window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: nc } }));
+              return nc;
+            });
+          }
+        } catch (e) {
+          // fallback increment
+          setCartCount((c) => {
+            const nc = c + quantity;
+            try { localStorage.setItem('shopEasyCartCount', String(nc)); } catch { }
+            window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: nc } }));
+            return nc;
+          });
+        }
 
         setCartMessage(data.message || "Product added to cart.");
 
@@ -432,64 +483,95 @@ function Home() {
     };
   }, [searchTerm]);
 
+  // update visibleCount on resize and clamp offsets
+  useEffect(() => {
+    const compute = () => {
+      const w = window.innerWidth;
+      let vc = 4;
+      if (w < 600) vc = 1;
+      else if (w < 900) vc = 2;
+      else if (w < 1100) vc = 3;
+      else vc = 4;
+      setVisibleCount(vc);
+      // clamp offsets
+      setCatOffsets((prev) => {
+        const next = { ...prev };
+        Object.keys(productsByCategory).forEach((cid) => {
+          const len = (productsByCategory[cid] || []).length;
+          const maxStart = Math.max(0, len - vc);
+          if ((next[cid] || 0) > maxStart) next[cid] = maxStart;
+        });
+        return next;
+      });
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, [productsByCategory]);
+
+  // sync cart count across tabs/pages and initialize from server if possible
+  useEffect(() => {
+    // storage event (other tabs)
+    const onStorage = (e) => {
+      if (e.key === 'shopEasyCartCount') {
+        try {
+          const val = e.newValue ? parseInt(e.newValue, 10) : 0;
+          setCartCount(isNaN(val) ? 0 : val);
+        } catch { setCartCount(0); }
+      }
+    };
+    window.addEventListener('storage', onStorage);
+
+    // custom event in same-tab
+    const onCartUpdated = (ev) => {
+      try {
+        const val = ev?.detail?.count ?? null;
+        if (typeof val === 'number') setCartCount(val);
+      } catch { }
+    };
+    window.addEventListener('shopEasyCartUpdated', onCartUpdated);
+
+    // try fetching current cart total from server (best-effort)
+    const tryInitFromServer = async () => {
+      try {
+        const stored = localStorage.getItem('loggedInUser');
+        if (!stored) return;
+        const u = JSON.parse(stored);
+        if (!u?.userId) return;
+        // try known endpoints
+        const candidates = [
+          `http://localhost:8082/cart/getCartByUser/${u.userId}`,
+          `http://localhost:8082/cart/getCart/${u.userId}`,
+          `http://localhost:8082/cart/getCart?userId=${u.userId}`
+        ];
+        for (const url of candidates) {
+          try {
+            const r = await fetch(url);
+            if (!r.ok) continue;
+            const d = await r.json();
+            const serverCount = d?.totalQuantity ?? d?.cartTotalQuantity ?? d?.totalItems ?? (Array.isArray(d?.items) ? d.items.reduce((s, i) => s + (i.quantity || 0), 0) : null);
+            if (typeof serverCount === 'number') {
+              setCartCount(serverCount);
+              try { localStorage.setItem('shopEasyCartCount', String(serverCount)); } catch { }
+              break;
+            }
+          } catch { }
+        }
+      } catch { }
+    };
+
+    tryInitFromServer();
+
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener('shopEasyCartUpdated', onCartUpdated);
+    };
+  }, []);
+
   return (
-<div className="home">
+    <div className="home">
 
-      {/* Navbar */}
-<nav className="navbar">
-<div className="logo">
-
-          🛍️ <span>ShopEasy</span>
-</div>
-<ul className="nav-links">
-<li className="active">Home</li>
-<li><Link to="/all-products">Products</Link></li>
-<li><Link to="/categories">Categories</Link></li>
-<li><Link to="/my-orders">Orders</Link></li>
-</ul>
-<div className="nav-right">
-<Link to="/cart" className="cart">
-
-            🛒
-</Link>
-
-          {user ? (
-<>
-<span className="user">👤 Hi, {user.firstName}</span>
-<button
-
-                className="logout-btn"
-
-                onClick={() => {
-
-                  localStorage.removeItem("loggedInUser");
-
-                  setUser(null);
-
-                  navigate("/login");
-
-                }}
->
-
-                Logout
-</button>
-</>
-
-          ) : (
-<>
-<Link to="/login" className="auth-button">
-
-                Login
-</Link>
-<Link to="/signup" className="auth-button signup-button">
-
-                Signup
-</Link>
-</>
-
-          )}
-</div>
-</nav>
+     <Navbar user={user} setUser={setUser} cartCount={cartCount} navigate={navigate} />
 
       {/* Search */}
       <div
@@ -644,10 +726,10 @@ function Home() {
           )}
         </section>
       )}
- 
+
 
       {/* Hero */}
- 
+
       {/* <section className="hero">
  
         <div className="hero-text">
@@ -707,140 +789,195 @@ function Home() {
         </div>
       </section>
       {/* Categories */}
-<section className="section">
-<div className="section-title">
-<h3>Shop by Categories</h3>
-</div>
-<div className="categories">
+      <section className="section">
+        <div className="section-title category-header">
+          <h3>Shop by Categories</h3>
+          {!loadingCategories && !catError && (
+            <div className="category-controls">
+              <button className="category-scroll-btn" onClick={() => scrollCategories('left')} aria-label="Scroll categories left">
+                ←
+              </button>
+              <button className="category-scroll-btn" onClick={() => scrollCategories('right')} aria-label="Scroll categories right">
+                →
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="categories" ref={categoryRowRef}>
 
           {loadingCategories ? (
-<p>Loading categories...</p>
+            <p>Loading categories...</p>
 
           ) : catError ? (
-<p className="error">Error: {catError}</p>
+            <p className="error">Error: {catError}</p>
 
           ) : (
 
             categories.map((category) => (
-<Link
+              <Link
 
                 to={`/category/${category.id}`}
 
                 className="category-card"
 
                 key={category.id}
->
-<div className="category-icon">{category.icon}</div>
-<p>{category.name}</p>
-</Link>
+              >
+                <div className="category-icon">{category.icon}</div>
+                <p>{category.name}</p>
+              </Link>
 
             ))
 
           )}
 
-</div>
-</section>
+        </div>
+      </section>
 
       {/* Products grouped by category */}
 
       {!loadingCategories && (
-<>
+        <>
+          {/* New Category carousels: show a horizontal carousel per category using productsByCategory */}
+          {categories.map((category) => {
+            const items = productsByCategory[category.id] || [];
+            // hide empty categories
+            if (!Array.isArray(items) || items.length === 0) return null;
 
-          {categories.map((category) => (
-<section className="section" key={`cat-section-${category.id}`}>
-<div className="section-title">
-<h3>{category.name}</h3>
-<Link to={`/category/${category.id}`}>View All</Link>
-</div>
+            // build pages for page-wise navigation
+            const pagesForCalc = [];
+            for (let i = 0; i < items.length; i += visibleCount) pagesForCalc.push(items.slice(i, i + visibleCount));
+            const currentOffset = catOffsets[category.id] || 0;
+            const currentPage = Math.floor(currentOffset / Math.max(1, visibleCount));
+            const maxPageCalc = Math.max(0, pagesForCalc.length - 1);
+            const leftDisabled = currentPage <= 0;
+            const rightDisabled = currentPage >= maxPageCalc;
 
-              {/* Messages */}
+            return (
+              <section className="section category-section" key={`cat-section-${category.id}`}>
+                <div className="section-title">
+                  <h3 className="category-title">{category.name}</h3>
+                  <Link to={`/category/${category.id}`} className="view-all">View All</Link>
+                </div>
 
-              {cartMessage && <div className="success-message">{cartMessage}</div>}
+                {cartMessage && <div className="success-message">{cartMessage}</div>}
+                {cartError && <div className="error-message">{cartError}</div>}
 
-              {cartError && <div className="error-message">{cartError}</div>}
-<div className="products">
+                <div className="category-carousel">
+                  <button
+                    className={`cat-arrow left ${leftDisabled ? 'disabled' : ''}`}
+                    aria-label={`Previous ${category.name}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (leftDisabled) return;
+                    setCatOffsets((prev) => {
+                      const curOff = prev[category.id] || 0;
+                      const curPage = Math.floor(curOff / Math.max(1, visibleCount));
+                      const nextPage = Math.max(0, curPage - 1);
+                      return { ...prev, [category.id]: nextPage * visibleCount };
+                    });
+                    }}
+                    disabled={leftDisabled}
+                  >
+                    ‹
+                  </button>
 
-                {loadingProductsByCategory ? (
-<p>Loading products...</p>
-
-                ) : prodByCatError ? (
-<p className="error">Error: {prodByCatError}</p>
-
-                ) : (
-
-                  (() => {
-
-                    const display = productsByCategory[category.id] || [];
-
-                    return display.map((product) => {
-
-                      const pid = product.productId || product.id;
-
-                      const image = product.image || product.imageUrl || "https://via.placeholder.com/180x130?text=Product";
-
-                      const price = product.price || product.cost || "N/A";
-
-                      const rating = product.rating || product.avgRating || "-";
+                  <div className="carousel-viewport">
+                    {/* build pages of visibleCount items (page-wise) */}
+                    {(() => {
+                      const pages = [];
+                      for (let i = 0; i < items.length; i += visibleCount) {
+                        pages.push(items.slice(i, i + visibleCount));
+                      }
+                      const currentOffset = catOffsets[category.id] || 0;
+                      const currentPage = Math.floor(currentOffset / Math.max(1, visibleCount));
+                      const maxPage = Math.max(0, pages.length - 1);
 
                       return (
-<div
-
-                          className="product-card"
-
-                          key={pid}
-
-                          onClick={() => navigate(`/product/${pid}`)}
-
-                          role="button"
-
-                          tabIndex={0}
-
-                          onKeyDown={(event) => {
-
-                            if (event.key === "Enter" || event.key === " ") {
-
-                              navigate(`/product/${pid}`);
-
-                            }
-
+                        <div
+                          className="carousel-track"
+                          style={{
+                            width: `${pages.length * 100}%`,
+                            transform: `translateX(-${currentPage * (100 / Math.max(1, pages.length))}%)`,
+                            transition: 'transform 400ms ease',
                           }}
->
-<img src={image} alt={product.productName || "Product"} />
-<h4>{product.productName || product.brand}</h4>
-<p className="price">{price}</p>
-<p className="rating">⭐ {rating} ({product.reviewsCount || 0})</p>
-<button
-
-                            onClick={(e) => {
-
-                              e.stopPropagation();
-
-                              handleAddToCart(pid);
-
-                            }}
->
-
-                            Add to Cart
-</button>
-</div>
-
+                        >
+                          {pages.map((pageItems, pIndex) => (
+                            <div
+                              className="carousel-page"
+                              key={`${category.id}-page-${pIndex}`}
+                              style={{ width: `${100 / pages.length}%`, display: 'flex' }}
+                            >
+                              {pageItems.map((product) => {
+                                const pid = product.productId || product.id;
+                                const image = product.image || product.imageUrl || "https://via.placeholder.com/180x130?text=Product";
+                                const price = product.price || product.cost || "N/A";
+                                const rating = product.rating || product.avgRating || "-";
+                                return (
+                                  <div
+                                    key={pid}
+                                    className="carousel-card"
+                                    style={{ flex: `0 0 ${100 / visibleCount}%` }}
+                                    onClick={() => navigate(`/product/${pid}`)}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(event) => {
+                                      if (event.key === 'Enter' || event.key === ' ') navigate(`/product/${pid}`);
+                                    }}
+                                  >
+                                    <div className="card-image">
+                                      <img src={image} alt={product.productName || 'Product'} />
+                                    </div>
+                                    <div className="card-body">
+                                      <div className="card-title">{product.productName || product.brand}</div>
+                                      <div className="card-meta">
+                                        <div className="price">{price}</div>
+                                        <div className="rating">⭐ {rating}</div>
+                                      </div>
+                                      <button
+                                        className="add-cart-btn"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleAddToCart(pid);
+                                        }}
+                                      >
+                                        Add to Cart
+                                      </button>
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
                       );
+                    })()}
+                  </div>
 
-                    });
+                  <button
+                    className={`cat-arrow right ${rightDisabled ? 'disabled' : ''}`}
+                    aria-label={`Next ${category.name}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (rightDisabled) return;
+                      setCatOffsets((prev) => {
+                        const curOff = prev[category.id] || 0;
+                        const curPage = Math.floor(curOff / Math.max(1, visibleCount));
+                        const nextPage = Math.min(maxPageCalc, curPage + 1);
+                        return { ...prev, [category.id]: nextPage * visibleCount };
+                      });
+                    }}
+                    disabled={rightDisabled}
+                  >
+                    ›
+                  </button>
+                </div>
 
-                  })()
-
-                )}
-</div>
-</section>
-
-
-          ))}
-</>
-
+              </section>
+            );
+          })}
+        </>
       )}
-</div>
-
+    </div>
   );
 
 }

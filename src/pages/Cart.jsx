@@ -91,7 +91,9 @@ function Cart() {
       const data = await res.json().catch(() => null);
       setMessage(data?.message || "Cart cleared");
       setCartData({ items: [] });
-      localStorage.setItem("cartItemsCount", JSON.stringify(0));
+      localStorage.setItem("shopEasyCartCount", JSON.stringify(0));
+      // notify other parts of the app
+      try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: 0 } })); } catch (e) {}
     } catch (err) {
       setError(err.message || "Failed to clear cart.");
     } finally {
@@ -111,11 +113,24 @@ function Cart() {
         return res.json();
       })
       .then((data) => {
-        setCartData((prev) => ({
-          ...prev,
-          items: prev?.items?.filter((item) => item.cartItemId !== cartItemId) || [],
-        }));
-        setCartMessage(data.message || "Item removed from cart.");
+            setCartData((prev) => {
+              // determine removed item's quantity to update global count
+              const removedItem = (prev?.items || []).find((item) => item.cartItemId === cartItemId);
+              const removedQty = removedItem ? Number(removedItem.quantity || 0) : 0;
+              const newItems = prev?.items?.filter((item) => item.cartItemId !== cartItemId) || [];
+
+              // update shared localStorage key and notify other components
+              try {
+                const raw = localStorage.getItem('shopEasyCartCount');
+                const curr = raw ? Number(JSON.parse(raw)) : 0;
+                const updated = Math.max(0, curr - removedQty);
+                localStorage.setItem('shopEasyCartCount', JSON.stringify(updated));
+                window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: updated } }));
+              } catch (e) {}
+
+              return { ...prev, items: newItems };
+            });
+            setCartMessage(data.message || "Item removed from cart.");
       })
       .catch((err) => {
         setError(err.message || "Failed to remove item.");
@@ -167,7 +182,14 @@ function Cart() {
           : it
       ),
     }));
-    // Optional: call backend to decrease quantity if API exists
+  // update local storage count and notify
+  try {
+    const count = JSON.parse(localStorage.getItem('shopEasyCartCount') || '0');
+    const updated = Math.max(0, Number(count) - 1);
+    localStorage.setItem('shopEasyCartCount', JSON.stringify(updated));
+    try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: updated } })); } catch (e) {}
+  } catch (e) {}
+  // Optional: call backend to decrease quantity if API exists
   }}
 >
   -
@@ -189,10 +211,12 @@ function Cart() {
       ),
     }));
 
-    // update local storage count if present
+    // update local storage count if present and notify
     try {
-      const count = JSON.parse(localStorage.getItem('cartItemsCount') || '0');
-      localStorage.setItem('cartItemsCount', JSON.stringify(Number(count) + 1));
+      const count = JSON.parse(localStorage.getItem('shopEasyCartCount') || '0');
+      const updated = Number(count) + 1;
+      localStorage.setItem('shopEasyCartCount', JSON.stringify(updated));
+      try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: updated } })); } catch (e) {}
     } catch (e) {}
 
     // call backend: reuse addToCart to increment quantity

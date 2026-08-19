@@ -1,9 +1,22 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Products.css";
+import Navbar from "../components/Navbar";
 
 const API_URL = "http://localhost:8085/products/getAllProduct";
 
 function Products() {
+  const navigate = useNavigate();
+  const [user, setUser] = useState(null);
+  const [cartCount, setCartCount] = useState(() => {
+    try {
+      const c = localStorage.getItem("shopEasyCartCount");
+      return c ? parseInt(c, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
   const [products, setProducts] = useState([]);
   const [filteredProducts, setFilteredProducts] = useState([]);
 
@@ -108,8 +121,10 @@ function Products() {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       alert(data.message || `${product.productName} added to cart.`);
-      const prevCount = Number(JSON.parse(localStorage.getItem("cartItemsCount") || "0"));
-      localStorage.setItem("cartItemsCount", JSON.stringify(prevCount + 1));
+      const prevCount = Number(JSON.parse(localStorage.getItem("shopEasyCartCount") || "0"));
+      const updated = prevCount + 1;
+      localStorage.setItem("shopEasyCartCount", JSON.stringify(updated));
+      try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: updated } })); } catch (e) {}
     } catch (err) {
       console.error(err);
       alert(err.message || "Failed to add to cart.");
@@ -120,7 +135,7 @@ function Products() {
     <div className="products-page">
 
       {/* Header */}
-      <header className="products-header">
+      {/* <header className="products-header">
 
         <div className="shop-logo">
           <span className="bag-icon">🛍️</span>
@@ -133,7 +148,8 @@ function Products() {
           </button>
         </div>
 
-      </header>
+      </header> */}
+      <Navbar user={user} setUser={setUser} cartCount={cartCount} navigate={navigate} />
 
       {/* Main Content */}
       <main className="products-container">
