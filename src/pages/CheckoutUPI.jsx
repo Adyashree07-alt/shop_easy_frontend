@@ -173,7 +173,7 @@ function CheckoutUPI() {
 
         <div className="amount">
           <span>Total Amount</span>
-          <h2>₹1,12,599</h2>
+          <h2>$1,12,599</h2>
         </div>
 
         <button

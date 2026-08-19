@@ -203,7 +203,7 @@ const CategoryPage = () => {
               >
                 <img src={p.imageUrl || p.image} alt={p.productName || p.name} />
                 <h4>{p.productName || p.name}</h4>
-                <p className="price">₹{p.price}</p>
+                <p className="price">${p.price}</p>
                 {p.brand && <p className="brand">{p.brand}</p>}
                 <button
                   onClick={(e) => {
@@ -295,7 +295,7 @@ const CategoryPage = () => {
                         >
                           <img src={productImage} alt={productName} />
                           <div className="p-name">{productName}</div>
-                          <div className="p-price">₹{product.price || product.productPrice || product.cost || 0}</div>
+                          <div className="p-price">${product.price || product.productPrice || product.cost || 0}</div>
                         </div>
                       );
                     })}

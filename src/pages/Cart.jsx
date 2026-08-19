@@ -170,7 +170,7 @@ function Cart() {
 <div className="product">
 <p>{item.productName}</p>
 </div>
-<div>₹{item.price.toLocaleString()}</div>
+<div>${item.price.toLocaleString()}</div>
 <div className="qty-box">
 <button
   onClick={() => {
@@ -245,22 +245,22 @@ function Cart() {
   +
 </button>
 </div>
-<div>₹{(item.totalPrice || (item.price * item.quantity)).toLocaleString()}</div>
+<div>${(item.totalPrice || (item.price * item.quantity)).toLocaleString()}</div>
 <button className="delete-btn" onClick={() => handleRemoveItem(item.cartItemId)}>🗑️</button>
 </div>
           ))}
 <div className="summary">
 <div>
 <span>Subtotal</span>
-<span>₹{subtotal.toLocaleString()}</span>
+<span>${subtotal.toLocaleString()}</span>
 </div>
 <div>
 <span>Shipping</span>
-<span>₹{shipping}</span>
+<span>${shipping}</span>
 </div>
 <div className="grand-total">
 <span>Grand Total</span>
-<span>₹{grandTotal.toLocaleString()}</span>
+<span>${grandTotal.toLocaleString()}</span>
 </div>
 </div>
 <div className="buttons">

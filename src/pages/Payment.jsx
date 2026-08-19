@@ -157,7 +157,7 @@ function Payment() {
 
         <div className="amount">
           <span>Total Amount</span>
-          <h2>₹{totalAmount != null ? Number(totalAmount).toLocaleString() : "—"}</h2>
+          <h2>${totalAmount != null ? Number(totalAmount).toLocaleString() : "—"}</h2>
         </div>
 
         <div>

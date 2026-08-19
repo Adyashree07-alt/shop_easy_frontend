@@ -190,16 +190,16 @@ function Checkout() {
           <h3>Order Summary</h3>
           <div className="summary-row">
             <span>Items ({itemsCount ?? "—"})</span>
-            <span>₹{grandTotal != null ? (grandTotal - 100).toLocaleString() : "—"}</span>
+            <span>${grandTotal != null ? (grandTotal - 100).toLocaleString() : "—"}</span>
           </div>
           <div className="summary-row">
             <span>Shipping</span>
-            <span>₹100</span>
+            <span>$100</span>
           </div>
           <hr />
           <div className="summary-row total">
             <span>Total Amount</span>
-            <span>₹{grandTotal != null ? grandTotal.toLocaleString() : "—"}</span>
+            <span>${grandTotal != null ? grandTotal.toLocaleString() : "—"}</span>
           </div>
         </div>
       </div>

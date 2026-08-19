@@ -13,7 +13,7 @@ const products = [
 
     name: "HP Pavilion Laptop",
 
-    price: "₹50,000",
+    price: "$50,000",
 
     rating: "4.5",
 
@@ -27,7 +27,7 @@ const products = [
 
     name: "Boat Rockerz 450",
 
-    price: "₹2,499",
+    price: "$2,499",
 
     rating: "4.4",
 
@@ -41,7 +41,7 @@ const products = [
 
     name: "Fastrack Watch",
 
-    price: "₹1,995",
+    price: "$1,995",
 
     rating: "4.5",
 
@@ -55,7 +55,7 @@ const products = [
 
     name: "Nike Sports Shoes",
 
-    price: "₹3,499",
+    price: "$3,499",
 
     rating: "4.6",
 

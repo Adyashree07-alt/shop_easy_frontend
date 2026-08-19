@@ -38,7 +38,7 @@ function MyOrders() {
   }, []);
 
   const formatAmount = (amount) =>
-    `₹${Number(amount).toLocaleString("en-IN", {
+    `$${Number(amount).toLocaleString("en-IN", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     })}`;

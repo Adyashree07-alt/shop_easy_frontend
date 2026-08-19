@@ -289,7 +289,7 @@ function Products() {
 
                         <div>
                           <p className="price">
-                            ₹ {Number(product.price).toFixed(2)}
+                            $ {Number(product.price).toFixed(2)}
                           </p>
 
                           <p

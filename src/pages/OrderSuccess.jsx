@@ -38,7 +38,7 @@ function OrderSuccess() {
 
   const getTotalAmount = () => {
     const v = order?.totalAmount ?? order?.total ?? order?.amount ?? order?.order?.totalAmount;
-    return v != null ? `₹${Number(v).toLocaleString()}` : "—";
+    return v != null ? `$${Number(v).toLocaleString()}` : "—";
   };
 
   return (
