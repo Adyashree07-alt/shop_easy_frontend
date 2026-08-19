@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import "./CategoryPage.css";
+import Navbar from "../components/Navbar";
 
 const iconMap = {
   Electronics: "💻",
@@ -91,7 +92,7 @@ const CategoryPage = () => {
               continue;
             }
             const result = await res.json();
-            mappedProducts[category.id] = Array.isArray(result) ? result.slice(0, 4) : [];
+            mappedProducts[category.id] = Array.isArray(result) ? result.slice(0, 7) : [];
           } catch {
             mappedProducts[category.id] = [];
           }
@@ -209,11 +210,13 @@ const CategoryPage = () => {
     );
   }
 
+
   return (
     <div className="categories-page">
+      <Navbar />
       <div className="category-header">
-        <h2>Categories</h2>
-        <Link to="/">← Back to Home</Link>
+        {/* <h2>Categories</h2> */}
+        {/* <Link to="/">← Back to Home</Link> */}
       </div>
 
       <div className="search-section">

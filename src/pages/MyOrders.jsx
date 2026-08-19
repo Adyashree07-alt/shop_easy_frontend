@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./MyOrders.css";
+import Navbar from "../components/Navbar";
 
 function MyOrders() {
   const [orders, setOrders] = useState([]);
@@ -57,8 +58,8 @@ function MyOrders() {
   return (
     <div className="orders-page">
 
-      <h2>My Orders</h2>
-
+      {/* <h2>My Orders</h2> */}
+<Navbar />
       {loading ? (
         <p>Loading orders...</p>
       ) : error ? (
@@ -92,7 +93,7 @@ function MyOrders() {
       )}
 
       {/* Bottom Navigation */}
-
+{/* 
       <nav className="bottom-nav">
 
         <div className="nav-item">
@@ -120,7 +121,7 @@ function MyOrders() {
           <p>Profile</p>
         </div>
 
-      </nav>
+      </nav> */}
 
     </div>
   );

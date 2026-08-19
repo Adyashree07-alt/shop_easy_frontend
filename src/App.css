@@ -190,7 +190,7 @@
 }
 
 .theme-toggle {
-  position: fixed;
+  /* position: fixed;
   right: 20px;
   top: 20px;
   z-index: 2000;
@@ -202,7 +202,8 @@
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 10px 25px rgba(17, 24, 39, 0.2);
+  box-shadow: 0 10px 25px rgba(17, 24, 39, 0.2); */
+  display: none;
 }
 
 .app-footer {
@@ -301,6 +302,21 @@ body.dark-mode .category-products {
 body.dark-mode .navbar {
   background: #0f172a !important;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.5) !important;
+}
+
+body.dark-mode .nav-links li {
+  color: #d1d5db !important;
+}
+
+body.dark-mode .nav-links li.active {
+  background: rgba(139, 92, 246, 0.2) !important;
+  color: #e9d5ff !important;
+}
+
+body.dark-mode .navbar-theme-toggle {
+  background: rgba(148, 163, 184, 0.12) !important;
+  color: #f8fafc !important;
+  border-color: rgba(196, 181, 253, 0.3) !important;
 }
 
 body.dark-mode .logo,

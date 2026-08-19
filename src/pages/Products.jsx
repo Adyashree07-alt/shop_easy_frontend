@@ -156,16 +156,16 @@ function Products() {
 
         {/* Page Heading */}
         <div className="products-heading">
-          <div>
+          {/* <div>
             <h1>All Products</h1>
             <p>
               Explore our collection of amazing products
             </p>
-          </div>
-
+          </div> */}
+{/* 
           <span className="product-count">
             {filteredProducts.length} Products
-          </span>
+          </span> */}
         </div>
 
         {/* Search and Filter */}

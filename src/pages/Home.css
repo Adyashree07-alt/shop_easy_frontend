@@ -47,26 +47,60 @@ body {
 .nav-links {
   display: flex;
   list-style: none;
-  gap: 35px;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
 }
- 
+
 .nav-links li {
   cursor: pointer;
   font-weight: 500;
   color: #555;
   transition: 0.3s;
+  border-radius: 999px;
+  padding: 8px 14px;
 }
- 
+
+.nav-links li a {
+  text-decoration: none;
+  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .nav-links li:hover,
-.nav-links .active {
+.nav-links li.active {
+  background: rgba(108, 62, 244, 0.1);
   color: #6c3ef4;
 }
- 
+
+.nav-links li.active {
+  box-shadow: inset 0 0 0 1px rgba(108, 62, 244, 0.18);
+}
+
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 25px;
+  gap: 16px;
   font-size: 17px;
+}
+
+.navbar-theme-toggle {
+  border: 1px solid rgba(108, 62, 244, 0.2);
+  background: #f3f4f6;
+  color: #1f2937;
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.navbar-theme-toggle:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(108, 62, 244, 0.12);
 }
  
 .cart {
