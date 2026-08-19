@@ -106,7 +106,7 @@ const ProductDetails = () => {
 
   const isInStock = product?.stockQuantity > 0;
   const formattedPrice = product?.price
-    ? `₹${Number(product.price).toLocaleString("en-IN", {
+    ? `$${Number(product.price).toLocaleString("en-IN", {
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       })}`

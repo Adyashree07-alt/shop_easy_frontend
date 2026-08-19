@@ -982,10 +982,11 @@ function Home() {
                                       <img src={image} alt={product.productName || 'Product'} />
                                     </div>
                                     <div className="card-body">
-                                      <div className="card-title">{product.productName || product.brand}</div>
+                                      <div className="card-title">{product.productName.length<22 ? product.productName?.slice(0,22):product.productName?.slice(0,22) + "..." || product.brand}</div>
                                       <div className="card-meta">
-                                        <div className="price">{price}</div>
-                                        <div className="rating">⭐ {rating}</div>
+                                        <div className="price">${price}</div>
+                                        {/* <div className="rating">⭐ {rating}</div> */}
+                                      
                                       </div>
                                       <button
                                         className="add-cart-btn"
