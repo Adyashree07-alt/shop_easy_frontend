@@ -245,6 +245,10 @@ function Products() {
                   <div
                     className="product-card"
                     key={product.productId}
+                    onClick={() => navigate(`/product/${product.productId}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/product/${product.productId}`); }}
                   >
 
                     {/* Product Image */}
@@ -306,9 +310,10 @@ function Products() {
                       <button
                         className="add-cart-btn"
                         disabled={isOutOfStock}
-                        onClick={() =>
-                          addToCart(product)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          addToCart(product);
+                        }}
                       >
                         {isOutOfStock
                           ? "Out of Stock"
