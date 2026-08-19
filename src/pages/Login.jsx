@@ -53,10 +53,11 @@ const Login = () => {
 
         <h2>Welcome Back!</h2>
         <p className="subtitle">Login to continue</p>
+            <label htmlFor="email" className="sr-only">Email<span style={{ color: "red" }}>*</span></label>
 
         <form onSubmit={handleSubmit}>
           <div className="input-group">
-            <FaEnvelope className="input-icon" />
+            {/* <FaEnvelope className="input-icon" /> */}
             <input
               type="email"
               placeholder="Email"
@@ -65,9 +66,10 @@ const Login = () => {
               required
             />
           </div>
-
+<label htmlFor="password" className="sr-only">Password<span style={{ color: "red" }}>*</span></label>
           <div className="input-group">
-            <FaLock className="input-icon" />
+            {/* <FaLock className="input-icon" /> */}
+            
             <input
               type="password"
               placeholder="Password"

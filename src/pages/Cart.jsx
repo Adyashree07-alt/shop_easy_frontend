@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Cart.css";
+import Navbar from "../components/Navbar";
 function Cart() {
   const navigate = useNavigate();
   const [cartData, setCartData] = useState(null);
@@ -137,9 +138,11 @@ function Cart() {
       });
   };
   return (
+    <>
+    <Navbar />
 <div className="cart-page">
 <h2>
-        Your Cart <span>({cartItems.length} items)</span>
+        Your Cart <span>({cartItems.length} Products)</span>
 </h2>
       {message && <p className="success">{message}</p>}
       {cartMessage && <div className="success-message">{cartMessage}</div>}
@@ -274,6 +277,7 @@ function Cart() {
 </div>
       )}
 </div>
+</>
   );
 }
 export default Cart;

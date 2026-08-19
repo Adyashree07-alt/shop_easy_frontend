@@ -9,3 +9,44 @@
     cursor: pointer;
     transition: all 0.2s ease;
 }
+
+/* Sticky header for navbar + search */
+.navbar-header{
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: var(--nav-bg, #ffffff);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.navbar{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 16px;
+}
+
+.search-bar{
+    padding: 8px 16px;
+    border-top: 1px solid rgba(0,0,0,0.03);
+}
+
+.search-bar input[type="text"]{
+    width: 320px;
+    max-width: calc(100% - 120px);
+    padding: 8px 10px;
+    border-radius: 6px;
+    border: 1px solid #e5e7eb;
+}
+
+.search-bar button{
+    margin-left: 8px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.search-suggestions .suggestion-item{
+    padding: 8px 10px;
+}

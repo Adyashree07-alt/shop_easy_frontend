@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import "./ProductDetails.css";
+import Navbar from "../components/Navbar";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -112,6 +113,8 @@ const ProductDetails = () => {
     : "Price unavailable";
 
   return (
+    <>
+    <Navbar />
     <div className="product-page">
       <div className="breadcrumb">
         Home <span>/</span> {product?.categoryName || "Products"} <span>/</span> {product?.productName}
@@ -180,6 +183,7 @@ const ProductDetails = () => {
         🔥 {product?.stockQuantity || 0} items available
       </div>
     </div>
+    </>
   );
 };
 

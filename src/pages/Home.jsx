@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 import "./Home.css";
 import Navbar from "../components/Navbar";
@@ -96,6 +96,7 @@ function Home() {
   });
 
   const navigate = useNavigate();
+  const location = useLocation();
   const categoryRowRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState([]);
@@ -396,6 +397,35 @@ function Home() {
 
   };
 
+  // Remove item from cart by cartItemId (callable from Home and exposed for quick use)
+  const removeCartItem = async (cartItemId, qty = 1) => {
+    if (!cartItemId) return;
+    try {
+      const res = await fetch(`http://localhost:8082/cart/removeItemFromCart/${cartItemId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json().catch(() => null);
+      // decrement shared cart count in localStorage
+      try {
+        const raw = localStorage.getItem('shopEasyCartCount');
+        const curr = raw ? Number(JSON.parse(raw)) : 0;
+        const updated = Math.max(0, curr - Number(qty || 1));
+        localStorage.setItem('shopEasyCartCount', JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: updated } }));
+      } catch (e) {}
+      // return server response for caller
+      return data;
+    } catch (err) {
+      console.error('Failed to remove cart item', err);
+      throw err;
+    }
+  };
+
+  useEffect(() => {
+    // expose helper for debugging/quick removal on Home page
+    window.removeCartItem = removeCartItem;
+    return () => { try { delete window.removeCartItem; } catch {} };
+  }, []);
+
   const performSearch = (term) => {
     setSearchPerformed(true);
 
@@ -483,7 +513,23 @@ function Home() {
     };
   }, [searchTerm]);
 
+  // if navigated with a `?q=` param (e.g., from Navbar on other pages), trigger search
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(location.search);
+      const q = params.get('q');
+      if (q) {
+        setSearchTerm(q);
+        setSearchPerformed(true);
+        // call performSearch immediately
+        performSearch(q);
+      }
+    } catch {}
+  }, [location.search]);
+
   // update visibleCount on resize and clamp offsets
+
+
   useEffect(() => {
     const compute = () => {
       const w = window.innerWidth;
@@ -540,9 +586,9 @@ function Home() {
         if (!u?.userId) return;
         // try known endpoints
         const candidates = [
-          `http://localhost:8082/cart/getCartByUser/${u.userId}`,
-          `http://localhost:8082/cart/getCart/${u.userId}`,
-          `http://localhost:8082/cart/getCart?userId=${u.userId}`
+          `http://localhost:8082/cart/getCartByUserId/${u.userId}`,
+          `http://localhost:8082/cart/getCartByUserId/${u.userId}`,
+          `http://localhost:8082/cart/getCartByUserId/${u.userId}`
         ];
         for (const url of candidates) {
           try {
@@ -568,94 +614,60 @@ function Home() {
     };
   }, []);
 
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('loggedInUser');
+      if (!stored) return;
+      const u = JSON.parse(stored);
+      const uid = u?.userId;
+      if (!uid) return;
+
+      fetch(`http://localhost:8082/cart/getCartByUserId/${uid}`)
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`Your cart is empty`);
+          }
+          return res.json();
+        })
+        .then((data) => {
+          setCartData(data);
+          try {
+            const totalQty = Array.isArray(data.items) ? data.items.reduce((s, it) => s + (Number(it.quantity) || 0), 0) : 0;
+            setCartCount(totalQty);
+            try { localStorage.setItem('shopEasyCartCount', String(totalQty)); } catch {}
+            try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: totalQty } })); } catch {}
+          } catch (e) {}
+        })
+        .catch((err) => {
+          setError(err.message || "Failed to load cart.");
+        });
+    } catch (e) {
+      // ignore parse errors
+    }
+  }, []);
+
   return (
     <div className="home">
 
-     <Navbar user={user} setUser={setUser} cartCount={cartCount} navigate={navigate} />
+     <Navbar
+       user={user}
+       setUser={setUser}
+       cartCount={cartCount}
+       navigate={navigate}
+       searchTerm={searchTerm}
+       setSearchTerm={setSearchTerm}
+       searchResults={searchResults}
+       isSearching={isSearching}
+       searchError={searchError}
+       showSuggestions={showSuggestions}
+       setShowSuggestions={setShowSuggestions}
+       suggestionsHideTimeoutRef={suggestionsHideTimeoutRef}
+       searchTimeoutRef={searchTimeoutRef}
+       performSearch={performSearch}
+       setSearchPerformed={setSearchPerformed}
+     />
 
-      {/* Search */}
-      <div
-        className="search-bar"
-        style={{ position: "relative" }}
-      >
-        <input
-          type="text"
-          placeholder="Search products, categories..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onFocus={() => {
-            if (searchResults.length > 0) setShowSuggestions(true);
-          }}
-          onBlur={() => {
-            // delay hiding so clicks on suggestions register
-            suggestionsHideTimeoutRef.current = setTimeout(() => setShowSuggestions(false), 150);
-          }}
-          aria-label="Search products"
-        />
-
-        <button
-          onClick={() => {
-            if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-            performSearch(searchTerm);
-            setShowSuggestions(true);
-          }}
-        >
-          Search
-        </button>
-
-        {showSuggestions && (searchResults.length > 0 || isSearching || searchError) && (
-          <div
-            className="search-suggestions"
-            style={{
-              position: "absolute",
-              top: "calc(100% + 6px)",
-              left: 0,
-              right: 0,
-              background: "#fff",
-              boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
-              zIndex: 50,
-              maxHeight: 320,
-              overflowY: "auto",
-              borderRadius: 6,
-              padding: 8,
-            }}
-            onMouseDown={() => {
-              // prevent blur-hide race
-              if (suggestionsHideTimeoutRef.current) {
-                clearTimeout(suggestionsHideTimeoutRef.current);
-                suggestionsHideTimeoutRef.current = null;
-              }
-            }}
-          >
-            {isSearching && <div className="suggestion-item">Searching...</div>}
-            {searchError && <div className="suggestion-item">Error: {searchError}</div>}
-            {searchResults.map((p) => {
-              const pid = p.productId || p.id;
-              const title = p.productName || p.name || p.brand || "Product";
-              const price = p.price || p.cost || "";
-              return (
-                <div
-                  key={pid}
-                  className="suggestion-item"
-                  style={{ padding: "8px 10px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center" }}
-                  onMouseDown={(e) => {
-                    e.preventDefault();
-                    setShowSuggestions(false);
-                    setSearchTerm("");
-                    navigate(`/product/${pid}`);
-                  }}
-                >
-                  <div style={{ fontSize: 14 }}>{title}</div>
-                  {price && <div style={{ fontSize: 13, color: "#666" }}>{price}</div>}
-                </div>
-              );
-            })}
-            {!isSearching && searchResults.length === 0 && !searchError && (
-              <div className="suggestion-item">No results</div>
-            )}
-          </div>
-        )}
-      </div>
+    
 
       {searchPerformed && (
         <section className="section">

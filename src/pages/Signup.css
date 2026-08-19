@@ -55,24 +55,34 @@
  
 .input-group {
   display: flex;
-  align-items: center;
-  height: 48px;
+  flex-direction: column;
+  align-items: flex-start;
   border: 1px solid #ddd;
   border-radius: 8px;
-  padding: 0 15px;
-  margin-bottom: 15px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  gap: 6px;
 }
- 
+
+.input-group label {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-size: 13px;
+  color: #333;
+}
+
 .icon {
   margin-right: 10px;
   font-size: 16px;
 }
- 
+
 .input-group input {
   width: 100%;
   border: none;
   outline: none;
   font-size: 14px;
+  padding: 8px 6px;
 }
  
 .terms {
@@ -109,6 +119,18 @@
  
 .signup-btn:hover {
   background: #5b31d4;
+}
+
+.error-message {
+  color: #dc2626;
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.field-error {
+  color: #dc2626;
+  font-size: 12px;
+  margin-top: 4px;
 }
  
 .login-text {

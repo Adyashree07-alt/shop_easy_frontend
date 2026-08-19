@@ -219,14 +219,14 @@ const CategoryPage = () => {
         {/* <Link to="/">← Back to Home</Link> */}
       </div>
 
-      <div className="search-section">
+      {/* <div className="search-section">
         <input
           type="text"
           placeholder="Search Category..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-      </div>
+      </div> */}
 
       {loadingCategories ? (
         <p>Loading categories...</p>

@@ -169,7 +169,7 @@ function Products() {
         </div>
 
         {/* Search and Filter */}
-        <div className="filter-section">
+        {/* <div className="filter-section">
 
           <div className="search-box">
             <span>🔍</span>
@@ -193,7 +193,7 @@ function Products() {
             ))}
           </select>
 
-        </div>
+        </div> */}
 
         {/* Loading */}
         {loading && (
