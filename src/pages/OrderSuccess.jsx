@@ -42,6 +42,8 @@ function OrderSuccess() {
   };
 
   return (
+    <>
+    <Navbar/>
     <div className="success-page">
       <div className="success-card">
         <div className="success-icon">✔</div>
@@ -81,6 +83,7 @@ function OrderSuccess() {
         </button>
       </div>
     </div>
+    </>
   );
 }
 

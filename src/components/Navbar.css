@@ -15,7 +15,7 @@
     position: sticky;
     top: 0;
     z-index: 1000;
-    background: var(--nav-bg, #ffffff);
+    background: var(--nav-bg, #F2F2F8);
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
 }
 
@@ -24,6 +24,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
+    background:#F2F2F8;
     padding: 10px 16px;
 }
 

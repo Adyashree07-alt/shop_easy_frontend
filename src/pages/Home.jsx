@@ -464,18 +464,65 @@ function Home() {
       })
       .then((data) => {
         const items = Array.isArray(data) ? data : data.products || [];
-        const q = term.toLowerCase();
-        const filtered = items.filter((p) => {
-          const name = (p.productName || p.name || "").toString().toLowerCase();
-          const desc = (p.description || p.productDescription || "").toString().toLowerCase();
-          const brand = (p.brand || p.manufacturer || "").toString().toLowerCase();
-          return (
-            (name && name.includes(q)) ||
-            (desc && desc.includes(q)) ||
-            (brand && brand.includes(q))
-          );
-        });
-        setSearchResults(filtered);
+        const q = term.toLowerCase().trim();
+
+        // If the query matches a category name, return that category's products (prefer productsByCategory data)
+        const matchedCategories = (categories || []).filter((c) => c.name.toLowerCase().includes(q));
+        let results = [];
+        if (matchedCategories.length > 0) {
+          // collect products for matched categories
+          matchedCategories.forEach((c) => {
+            const list = productsByCategory[c.id] || [];
+            if (Array.isArray(list) && list.length > 0) {
+              results.push(...list);
+            } else {
+              // fallback: filter full item list by product's category fields
+              results.push(
+                ...items.filter((p) => {
+                  const catName = (
+                    p.categoryName ||
+                    (p.category && (p.category.categoryName || p.category.name)) ||
+                    p.category ||
+                    ""
+                  )
+                    .toString()
+                    .toLowerCase();
+                  return catName.includes(c.name.toLowerCase());
+                })
+              );
+            }
+          });
+          // dedupe
+          const seen = new Set();
+          results = results.filter((p) => {
+            const pid = p.productId || p.id;
+            if (seen.has(pid)) return false;
+            seen.add(pid);
+            return true;
+          });
+        } else {
+          // regular search: include category fields in match
+          results = items.filter((p) => {
+            const name = (p.productName || p.name || "").toString().toLowerCase();
+            const desc = (p.description || p.productDescription || "").toString().toLowerCase();
+            const brand = (p.brand || p.manufacturer || "").toString().toLowerCase();
+            const catName = (
+              p.categoryName ||
+              (p.category && (p.category.categoryName || p.category.name)) ||
+              p.category ||
+              ""
+            )
+              .toString()
+              .toLowerCase();
+            return (
+              (name && name.includes(q)) ||
+              (desc && desc.includes(q)) ||
+              (brand && brand.includes(q)) ||
+              (catName && catName.includes(q))
+            );
+          });
+        }
+        setSearchResults(results);
         setShowSuggestions(true);
         setIsSearching(false);
         setSearchError(null);

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Checkout.css";
+import Navbar from "../components/Navbar";
 
 function Checkout() {
   const navigate = useNavigate();
@@ -111,6 +112,8 @@ function Checkout() {
   };
 
   return (
+    <>
+    <Navbar />
     <div className="checkout-page">
       <div className="checkout-container">
         {/* Shipping Address */}
@@ -205,6 +208,7 @@ function Checkout() {
         {loading ? "Saving Address..." : "Save Address & Continue"}
       </button>
     </div>
+    </>
   );
 }
 

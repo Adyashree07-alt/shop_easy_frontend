@@ -115,6 +115,15 @@ const CategoryPage = () => {
     };
   }, [id]);
 
+  useEffect(() => {
+    // Ensure we start at the top when navigating between categories
+    try {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    } catch (e) {
+      // ignore in non-window environments
+    }
+  }, [id]);
+
   const filteredCategories = categories.filter((category) =>
     category.name.toLowerCase().includes(search.toLowerCase())
   );
@@ -161,9 +170,11 @@ const CategoryPage = () => {
 
   if (id) {
     return (
+      <>
+        <Navbar/>
       <div className="category-products">
         <div className="category-products-header">
-          <h2>Products</h2>
+          <h2>{products[0]?.categoryName || (categories.find((c) => c.id == id)?.name) || "Products"}</h2>
           <Link to="/category">← Back to Categories</Link>
         </div>
 
@@ -207,11 +218,13 @@ const CategoryPage = () => {
           </div>
         )}
       </div>
+      </>
     );
   }
 
 
   return (
+
     <div className="categories-page">
       <Navbar />
       <div className="category-header">
