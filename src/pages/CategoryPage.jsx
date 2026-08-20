@@ -162,6 +162,18 @@ const CategoryPage = () => {
       })
       .then((data) => {
         setCartMessage(data.message || "Product added to cart.");
+        try {
+          const serverCount = data?.cartTotalQuantity ?? data?.totalQuantity ?? data?.cart?.totalQuantity ?? null;
+          if (typeof serverCount === 'number') {
+            try { localStorage.setItem('shopEasyCartCount', JSON.stringify(serverCount)); } catch (e) {}
+            try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: serverCount } })); } catch (e) {}
+          } else {
+            const prev = Number(JSON.parse(localStorage.getItem('shopEasyCartCount') || '0')) || 0;
+            const updated = prev + Number(quantity || 1);
+            try { localStorage.setItem('shopEasyCartCount', JSON.stringify(updated)); } catch (e) {}
+            try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: updated } })); } catch (e) {}
+          }
+        } catch (e) {}
       })
       .catch((err) => {
         setCartError(err.message || "Failed to add to cart.");

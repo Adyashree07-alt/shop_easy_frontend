@@ -83,11 +83,11 @@ const Signup = () => {
     }
     if (name === 'mobileNumber') {
       const digits = (value || '').replace(/\D/g, '');
-      if (!digits || digits.length < 10) return 'Please enter a valid mobile number (at least 10 digits).';
+      if (!digits || digits.length < 10) return 'Please enter a valid mobile number';
       return '';
     }
     if (name === 'password') {
-      if (!value || value.length < 6) return 'Password must be at least 6 characters.';
+      if (!value || value.length < 8) return 'Password must be at least 8 characters.';
       return '';
     }
     if (name === 'agreeTerms') {

@@ -11,6 +11,10 @@ function Payment() {
   const [expiryDate, setExpiryDate] = useState("");
   const [cvv, setCvv] = useState("");
   const [nameOnCard, setNameOnCard] = useState("");
+  const [cardNumberError, setCardNumberError] = useState("");
+  const [expiryError, setExpiryError] = useState("");
+  const [cvvError, setCvvError] = useState("");
+  const [nameOnCardError, setNameOnCardError] = useState("");
   const [totalAmount, setTotalAmount] = useState(null);
   const [userId, setUserId] = useState(null);
   const [addressId, setAddressId] = useState(null);
@@ -48,6 +52,61 @@ function Payment() {
 
   const placeOrder = async () => {
     setError(null);
+    // validate inputs for card payments
+    const validatePaymentInputs = () => {
+      let ok = true;
+      setCardNumberError("");
+      setExpiryError("");
+      setCvvError("");
+      setNameOnCardError("");
+
+      if (paymentType === "CREDIT_CARD" || paymentType === "DEBIT_CARD") {
+        const num = (cardNumber || "").toString().replace(/\s|-/g, "");
+        if (!/^\d{16}$/.test(num)) {
+          setCardNumberError("Card number must be 16 digits");
+          ok = false;
+        }
+
+        const cv = (cvv || "").toString().trim();
+        if (!/^\d{3}$/.test(cv)) {
+          setCvvError("CVV must be 3 digits");
+          ok = false;
+        }
+
+        const name = (nameOnCard || "").toString().trim();
+        if (!name) {
+          setNameOnCardError("Name on card is required");
+          ok = false;
+        }
+
+        // expiry: expect MM/YY or MM/YYYY
+        const exp = (expiryDate || "").toString().trim();
+        const parts = exp.split('/');
+        if (parts.length !== 2) {
+          setExpiryError("Must be MM/YY");
+          ok = false;
+        } else {
+          const m = parseInt(parts[0], 10);
+          let y = parts[1].length === 2 ? 2000 + parseInt(parts[1], 10) : parseInt(parts[1], 10);
+          if (Number.isNaN(m) || Number.isNaN(y) || m < 1 || m > 12) {
+            setExpiryError("Expiry must be a valid month/year");
+            ok = false;
+          } else {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentMonth = now.getMonth() + 1; // 1-12
+            if (y < currentYear || (y === currentYear && m < currentMonth)) {
+              setExpiryError("Card expiry must not be in the past");
+              ok = false;
+            }
+          }
+        }
+      }
+
+      return ok;
+    };
+
+    if (!validatePaymentInputs()) return;
     if (!userId) {
       setError("Please login to place an order.");
       return;
@@ -66,7 +125,7 @@ function Payment() {
       };
 
       if (paymentType === "CREDIT_CARD" || paymentType === "DEBIT_CARD") {
-        payload.cardNumber = cardNumber;
+        payload.cardNumber = cardNumber.replace(/\s|-/g, "");
         payload.expiryDate = expiryDate;
         payload.cvv = cvv;
       }
@@ -115,10 +174,10 @@ function Payment() {
             Debit Card
           </label>
 
-          <label className="radio-option">
+          {/* <label className="radio-option">
             <input type="radio" name="payment" checked={paymentType === "UPI"} onChange={() => setPaymentType("UPI")} />
             UPI
-          </label>
+          </label> */}
         </div>
 
         {(paymentType === "CREDIT_CARD" || paymentType === "DEBIT_CARD") && (
@@ -126,25 +185,73 @@ function Payment() {
             <h3>Card Details</h3>
 
             <div className="input-group">
-              <label>Card Number</label>
-              <input type="text" placeholder="1234 5678 9012 3456" value={cardNumber} onChange={(e) => setCardNumber(e.target.value)} />
+              <label>
+                Card Number
+                {cardNumberError && (
+                  <span style={{ color: '#dc2626', marginLeft: 8, fontSize: 13 }}>
+                    {cardNumberError}
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                placeholder="1234 5678 9012 3456"
+                value={cardNumber}
+                onChange={(e) => { setCardNumber(e.target.value); if (cardNumberError) setCardNumberError(""); }}
+              />
             </div>
 
             <div className="row">
               <div className="input-group">
-                <label>Expiry Date</label>
-                <input type="text" placeholder="12/28" value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
+                <label>
+                  Expiry Date
+                  {expiryError && (
+                    <span style={{ color: '#dc2626', marginLeft: 8, fontSize: 13 }}>
+                      {expiryError}
+                    </span>
+                  )}
+                </label>
+                <input
+                  type="text"
+                  placeholder="12/28"
+                  value={expiryDate}
+                  onChange={(e) => { setExpiryDate(e.target.value); if (expiryError) setExpiryError(""); }}
+                />
               </div>
 
               <div className="input-group">
-                <label>CVV</label>
-                <input type="password" placeholder="123" value={cvv} onChange={(e) => setCvv(e.target.value)} />
+                <label>
+                  CVV
+                  {cvvError && (
+                    <span style={{ color: '#dc2626', marginLeft: 8, fontSize: 13 }}>
+                      {cvvError}
+                    </span>
+                  )}
+                </label>
+                <input
+                  type="password"
+                  placeholder="123"
+                  value={cvv}
+                  onChange={(e) => { setCvv(e.target.value); if (cvvError) setCvvError(""); }}
+                />
               </div>
             </div>
 
             <div className="input-group">
-              <label>Name on Card</label>
-              <input type="text" placeholder="John Doe" value={nameOnCard} onChange={(e) => setNameOnCard(e.target.value)} />
+              <label>
+                Name on Card
+                {nameOnCardError && (
+                  <span style={{ color: '#dc2626', marginLeft: 8, fontSize: 13 }}>
+                    {nameOnCardError}
+                  </span>
+                )}
+              </label>
+              <input
+                type="text"
+                placeholder="John Doe"
+                value={nameOnCard}
+                onChange={(e) => { setNameOnCard(e.target.value); if (nameOnCardError) setNameOnCardError(""); }}
+              />
             </div>
           </div>
         )}

@@ -33,6 +33,14 @@ const Login = () => {
       setLoading(false);
       if (data?.status === "ACTIVE" || data?.userId) {
         localStorage.setItem("loggedInUser", JSON.stringify(data));
+        try {
+          // reset cart count for newly logged-in user to avoid showing stale local value
+          localStorage.setItem('shopEasyCartCount', JSON.stringify(0));
+        } catch (e) {}
+        try {
+          window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: 0 } }));
+          window.dispatchEvent(new CustomEvent('shopEasyUserUpdated', { detail: { user: data } }));
+        } catch (e) {}
         navigate("/");
       } else {
         setError("Login failed. Please check your credentials.");

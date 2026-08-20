@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./OrderSuccess.css";
+import Navbar from "../components/Navbar";
+
 
 function OrderSuccess() {
   const navigate = useNavigate();
@@ -16,6 +18,15 @@ function OrderSuccess() {
       }
     }
   }, []);
+
+  useEffect(() => {
+    // when we have a confirmed order, reset the shared cart count
+    if (!order) return;
+    try {
+      localStorage.setItem('shopEasyCartCount', JSON.stringify(0));
+    } catch (e) {}
+    try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: 0 } })); } catch (e) {}
+  }, [order]);
 
   const getOrderId = () => {
     return (

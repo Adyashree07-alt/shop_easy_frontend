@@ -24,7 +24,7 @@ function MyOrders() {
 
     fetch(`http://localhost:8083/order/getOrdersByUser/${user.userId}`)
       .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        if (!res.ok) throw new Error(`No Orders Found`);
         return res.json();
       })
       .then((data) => {
