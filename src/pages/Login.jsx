@@ -1,4 +1,5 @@
 import { useState } from "react";
+import localStorageService, { findUserByEmailAndPassword } from "../services/localStorageService";
 import { Link, useNavigate } from "react-router-dom";
 import "./Login.css";
 import { FaShoppingBag, FaEnvelope, FaLock } from "react-icons/fa";
@@ -16,30 +17,19 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const response = await fetch("http://localhost:8081/user/logIn", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || `HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
+      const user = findUserByEmailAndPassword(email, password);
       setLoading(false);
-      if (data?.status === "ACTIVE" || data?.userId) {
-        localStorage.setItem("loggedInUser", JSON.stringify(data));
+      if (user) {
+        // don't expose password to other parts of the app
+        const safeUser = { ...user };
+        try { delete safeUser.password; } catch {}
+        localStorage.setItem("loggedInUser", JSON.stringify(safeUser));
         try {
-          // reset cart count for newly logged-in user to avoid showing stale local value
           localStorage.setItem('shopEasyCartCount', JSON.stringify(0));
         } catch (e) {}
         try {
           window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: 0 } }));
-          window.dispatchEvent(new CustomEvent('shopEasyUserUpdated', { detail: { user: data } }));
+          window.dispatchEvent(new CustomEvent('shopEasyUserUpdated', { detail: { user: safeUser } }));
         } catch (e) {}
         navigate("/");
       } else {

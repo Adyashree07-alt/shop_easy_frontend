@@ -2,6 +2,7 @@
 import { useParams } from "react-router-dom";
 import "./ProductDetails.css";
 import Navbar from "../components/Navbar";
+import { getProductById, addToCart } from "../services/localStorageService";
 
 const ProductDetails = () => {
   const { id } = useParams();
@@ -20,21 +21,15 @@ const ProductDetails = () => {
     }
 
     setLoading(true);
-    fetch(`http://localhost:8085/products/getProductById/${id}`)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`Failed to load product (${res.status})`);
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setProduct(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message || "Failed to load product.");
-        setLoading(false);
-      });
+    try {
+      const p = getProductById(Number(id));
+      if (!p) throw new Error('Product not found');
+      setProduct(p);
+    } catch (err) {
+      setError(err.message || "Failed to load product.");
+    } finally {
+      setLoading(false);
+    }
   }, [id]);
 
   const handleAddToCart = () => {
@@ -55,37 +50,17 @@ const ProductDetails = () => {
       return;
     }
 
-    fetch("http://localhost:8082/cart/addToCart", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userId: user.userId,
-        productId: product.productId,
-        quantity,
-      }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        setCartMessage(data.message || "Product added to cart.");
-        try {
-          const serverCount = data?.cartTotalQuantity ?? data?.totalQuantity ?? data?.cart?.totalQuantity ?? null;
-          if (typeof serverCount === 'number') {
-            localStorage.setItem('shopEasyCartCount', JSON.stringify(serverCount));
-            try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: serverCount } })); } catch (e) {}
-          } else {
-            const prev = Number(JSON.parse(localStorage.getItem('shopEasyCartCount') || '0'));
-            const updated = prev + quantity;
-            localStorage.setItem('shopEasyCartCount', JSON.stringify(updated));
-            try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: updated } })); } catch (e) {}
-          }
-        } catch (e) {}
-      })
-      .catch((err) => setCartError(err.message || "Failed to add to cart."));
+    try {
+      const cart = addToCart(product.productId, quantity);
+      setCartMessage("Product added to cart.");
+      try {
+        const totalQty = Array.isArray(cart.items) ? cart.items.reduce((s, it) => s + (Number(it.quantity) || 0), 0) : 0;
+        localStorage.setItem('shopEasyCartCount', JSON.stringify(totalQty));
+        try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: totalQty } })); } catch (e) {}
+      } catch (e) {}
+    } catch (err) {
+      setCartError(err.message || "Failed to add to cart.");
+    }
   };
 
   if (loading) {

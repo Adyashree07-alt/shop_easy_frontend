@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "./MyOrders.css";
 import Navbar from "../components/Navbar";
+import { getOrdersByUserId } from "../services/localStorageService";
 
 function MyOrders() {
   const [orders, setOrders] = useState([]);
@@ -22,19 +23,14 @@ function MyOrders() {
       return;
     }
 
-    fetch(`http://localhost:8083/order/getOrdersByUser/${user.userId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`No Orders Found`);
-        return res.json();
-      })
-      .then((data) => {
-        setOrders(data || []);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message || "Failed to load orders.");
-        setLoading(false);
-      });
+    try {
+      const data = getOrdersByUserId(user.userId);
+      setOrders(data || []);
+      setLoading(false);
+    } catch (err) {
+      setError(err.message || "Failed to load orders.");
+      setLoading(false);
+    }
   }, []);
 
   const formatAmount = (amount) =>

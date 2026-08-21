@@ -4,6 +4,7 @@ import { Link, useNavigate, useLocation } from "react-router-dom";
 
 import "./Home.css";
 import Navbar from "../components/Navbar";
+import { getCategories, getProductsByCategory, getProducts, getCart, addToCart, removeFromCart } from "../services/localStorageService";
 
 const products = [
 
@@ -158,150 +159,51 @@ function Home() {
     }
 
     let mounted = true;
-
-    fetch("http://localhost:8085/category/getAllCategories")
-
-      .then((res) => {
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        return res.json();
-
-      })
-
-      .then((data) => {
-
-        if (!mounted) return;
-
-        const iconMap = {
-
-          Electronics: "💻",
-
-          Fashion: "👕",
-
-          Books: "📘",
-
-          Grocery: "🛒",
-
-          "Home & Kitchen": "🏠",
-
-          Beauty: "💄",
-
-          Shoes: "👟",
-
-          Watch: "⌚",
-
-          Decors: "🖼️",
-
-          Perfume: "🧴",
-
-          "Food items": "🍔",
-
-          Furniture: "🛋️",
-
-        };
-
-        const mapped = data.map((c) => ({
-
-          id: c.categoryId,
-
-          name: c.categoryName,
-
-          icon: iconMap[c.categoryName] || "📦",
-
-        }));
-
-        setCategories(mapped);
-
-        setLoadingCategories(false);
-
-        // Fetch products for each category (sample up to 4 random products)
-
-        Promise.all(
-
-          mapped.map((c) =>
-
-            fetch(`http://localhost:8085/products/getProductsByCategoryId/${c.id}`)
-
-              .then((res) => {
-
-                if (!res.ok) return [];
-
-                return res.json();
-
-              })
-
-              .catch(() => [])
-
-          )
-
-        )
-
-          .then((results) => {
-
-            if (!mounted) return;
-
-            const map = {};
-
-            const sample = (arr, n) => {
-
-              const a = Array.isArray(arr) ? arr.slice() : [];
-
-              for (let i = a.length - 1; i > 0; i--) {
-
-                const j = Math.floor(Math.random() * (i + 1));
-
-                [a[i], a[j]] = [a[j], a[i]];
-
-              }
-
-              return a.slice(0, n);
-
-            };
-
-            results.forEach((items, idx) => {
-
-              // store the full list of products for the category so carousel can navigate all items
-              map[mapped[idx].id] = Array.isArray(items) ? items : [];
-
-            });
-
-            setProductsByCategory(map);
-
-            setLoadingProductsByCategory(false);
-
-          })
-
-          .catch((err) => {
-
-            if (!mounted) return;
-
-            setProdByCatError(err.message);
-
-            setLoadingProductsByCategory(false);
-
-          });
-
-      })
-
-      .catch((err) => {
-
-        if (!mounted) return;
-
-        setCatError(err.message);
-
-        setLoadingCategories(false);
-
+    try {
+      const data = getCategories();
+
+      const iconMapLocal = {
+        Electronics: "💻",
+        Fashion: "👕",
+        Books: "📘",
+        Grocery: "🛒",
+        "Home & Kitchen": "🏠",
+        Beauty: "💄",
+        Shoes: "👟",
+        Watch: "⌚",
+        Decors: "🖼️",
+        Perfume: "🧴",
+        "Food items": "🍔",
+        Furniture: "🛋️",
+      };
+
+      const mapped = (Array.isArray(data) ? data : []).map((c) => ({
+        id: c.categoryId,
+        name: c.categoryName,
+        icon: iconMapLocal[c.categoryName] || "📦",
+      }));
+
+      setCategories(mapped);
+      setLoadingCategories(false);
+
+      // Fetch products for each category (sample up to 4 random products)
+      const results = mapped.map((c) => getProductsByCategory(c.name) || []);
+      const map = {};
+      results.forEach((items, idx) => {
+        map[mapped[idx].id] = Array.isArray(items) ? items : [];
       });
+      setProductsByCategory(map);
+      setLoadingProductsByCategory(false);
+    } catch (err) {
+      if (!mounted) return;
+      setCatError(err.message);
+      setLoadingCategories(false);
+    }
 
     return () => {
-
       mounted = false;
-
     };
-
   }, []);
-
   const handleAddToCart = (productId, quantity = 1) => {
     // clear only messages for this product
     setCartMessages((m) => { const copy = { ...m }; delete copy[productId]; return copy; });
@@ -323,73 +225,28 @@ function Home() {
       return;
     }
 
-    fetch("http://localhost:8082/cart/addToCart", {
+    try {
+      const cart = addToCart(productId, quantity);
+      try {
+        const totalQty = Array.isArray(cart.items) ? cart.items.reduce((s, i) => s + (i.quantity || 0), 0) : cart?.items?.length || 0;
+        setCartCount(totalQty);
+        try { localStorage.setItem('shopEasyCartCount', String(totalQty)); } catch { }
+        window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: totalQty } }));
+      } catch (e) {
+        setCartCount((c) => {
+          const nc = c + quantity;
+          try { localStorage.setItem('shopEasyCartCount', String(nc)); } catch { }
+          window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: nc } }));
+          return nc;
+        });
+      }
 
-      method: "POST",
-
-      headers: {
-
-        "Content-Type": "application/json",
-
-      },
-
-      body: JSON.stringify({
-
-        userId: user.userId,
-
-        productId,
-
-        quantity,
-
-      }),
-
-    })
-
-      .then((res) => {
-
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        return res.json();
-
-      })
-
-      .then((data) => {
-        // If server returns cart or count use it, otherwise increment optimistically
-        try {
-          const serverCount = data?.cartTotalQuantity ?? data?.totalQuantity ?? data?.cart?.totalQuantity ?? null;
-          if (typeof serverCount === 'number') {
-            setCartCount(serverCount);
-            try { localStorage.setItem('shopEasyCartCount', String(serverCount)); } catch { }
-            window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: serverCount } }));
-          } else {
-            // optimistic increment
-            setCartCount((c) => {
-              const nc = c + quantity;
-              try { localStorage.setItem('shopEasyCartCount', String(nc)); } catch { }
-              window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: nc } }));
-              return nc;
-            });
-          }
-        } catch (e) {
-          // fallback increment
-          setCartCount((c) => {
-            const nc = c + quantity;
-            try { localStorage.setItem('shopEasyCartCount', String(nc)); } catch { }
-            window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: nc } }));
-            return nc;
-          });
-        }
-
-        setCartMessages((m) => ({ ...m, [productId]: data.message || "Product added to cart." }));
-        // clear message after 3s
-        setTimeout(() => setCartMessages((m) => { const c = { ...m }; delete c[productId]; return c; }), 3000);
-
-      })
-
-      .catch((err) => {
-        setCartErrors((m) => ({ ...m, [productId]: err.message || "Failed to add to cart." }));
-        setTimeout(() => setCartErrors((m) => { const c = { ...m }; delete c[productId]; return c; }), 3000);
-      });
+      setCartMessages((m) => ({ ...m, [productId]: "Product added to cart." }));
+      setTimeout(() => setCartMessages((m) => { const c = { ...m }; delete c[productId]; return c; }), 3000);
+    } catch (err) {
+      setCartErrors((m) => ({ ...m, [productId]: err.message || "Failed to add to cart." }));
+      setTimeout(() => setCartErrors((m) => { const c = { ...m }; delete c[productId]; return c; }), 3000);
+    }
 
   };
 
@@ -397,10 +254,10 @@ function Home() {
   const removeCartItem = async (cartItemId, qty = 1) => {
     if (!cartItemId) return;
     try {
-      const res = await fetch(`http://localhost:8082/cart/removeItemFromCart/${cartItemId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json().catch(() => null);
-      // decrement shared cart count in localStorage
+      // find productId for the cartItemId and remove
+      const cart = getCart();
+      const removedItem = (cart?.items || []).find((it) => it.cartItemId === cartItemId);
+      if (removedItem) removeFromCart(removedItem.productId);
       try {
         const raw = localStorage.getItem('shopEasyCartCount');
         const curr = raw ? Number(JSON.parse(raw)) : 0;
@@ -408,8 +265,7 @@ function Home() {
         localStorage.setItem('shopEasyCartCount', JSON.stringify(updated));
         window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: updated } }));
       } catch (e) {}
-      // return server response for caller
-      return data;
+      return null;
     } catch (err) {
       console.error('Failed to remove cart item', err);
       throw err;
@@ -457,13 +313,9 @@ function Home() {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
-    fetch("http://localhost:8085/products/getAllProduct", { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        const items = Array.isArray(data) ? data : data.products || [];
+    try {
+      const data = getProducts();
+      const items = Array.isArray(data) ? data : data.products || [];
         const q = term.toLowerCase().trim();
 
         // If the query matches a category name, return that category's products (prefer productsByCategory data)
@@ -526,12 +378,10 @@ function Home() {
         setShowSuggestions(true);
         setIsSearching(false);
         setSearchError(null);
-      })
-      .catch((err) => {
-        if (err.name === "AbortError") return;
-        setSearchError(err.message || "Search failed");
-        setIsSearching(false);
-      });
+    } catch (err) {
+      setSearchError(err.message || "Search failed");
+      setIsSearching(false);
+    }
   };
 
   useEffect(() => {
@@ -627,24 +477,11 @@ function Home() {
         if (!stored) return;
         const u = JSON.parse(stored);
         if (!u?.userId) return;
-        // try known endpoints
-        const candidates = [
-          `http://localhost:8082/cart/getCartByUserId/${u.userId}`,
-          `http://localhost:8082/cart/getCartByUserId/${u.userId}`,
-          `http://localhost:8082/cart/getCartByUserId/${u.userId}`
-        ];
-        for (const url of candidates) {
-          try {
-            const r = await fetch(url);
-            if (!r.ok) continue;
-            const d = await r.json();
-            const serverCount = d?.totalQuantity ?? d?.cartTotalQuantity ?? d?.totalItems ?? (Array.isArray(d?.items) ? d.items.reduce((s, i) => s + (i.quantity || 0), 0) : null);
-            if (typeof serverCount === 'number') {
-              setCartCount(serverCount);
-              try { localStorage.setItem('shopEasyCartCount', String(serverCount)); } catch { }
-              break;
-            }
-          } catch { }
+        const cart = getCart();
+        const serverCount = Array.isArray(cart.items) ? cart.items.reduce((s, i) => s + (i.quantity || 0), 0) : 0;
+        if (typeof serverCount === 'number') {
+          setCartCount(serverCount);
+          try { localStorage.setItem('shopEasyCartCount', String(serverCount)); } catch { }
         }
       } catch { }
     };
@@ -665,25 +502,18 @@ function Home() {
       const uid = u?.userId;
       if (!uid) return;
 
-      fetch(`http://localhost:8082/cart/getCartByUserId/${uid}`)
-        .then((res) => {
-          if (!res.ok) {
-            throw new Error(`Your cart is empty`);
-          }
-          return res.json();
-        })
-        .then((data) => {
-          setCartData(data);
-          try {
-            const totalQty = Array.isArray(data.items) ? data.items.reduce((s, it) => s + (Number(it.quantity) || 0), 0) : 0;
-            setCartCount(totalQty);
-            try { localStorage.setItem('shopEasyCartCount', String(totalQty)); } catch {}
-            try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: totalQty } })); } catch {}
-          } catch (e) {}
-        })
-        .catch((err) => {
-          setError(err.message || "Failed to load cart.");
-        });
+      try {
+        const data = getCart();
+        setCartData(data);
+        try {
+          const totalQty = Array.isArray(data.items) ? data.items.reduce((s, it) => s + (Number(it.quantity) || 0), 0) : 0;
+          setCartCount(totalQty);
+          try { localStorage.setItem('shopEasyCartCount', String(totalQty)); } catch {}
+          try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: totalQty } })); } catch {}
+        } catch (e) {}
+      } catch (err) {
+        setError(err.message || "Failed to load cart.");
+      }
     } catch (e) {
       // ignore parse errors
     }

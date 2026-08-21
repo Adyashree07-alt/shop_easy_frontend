@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Cart.css";
 import Navbar from "../components/Navbar";
+import { getCart, clearCart, removeFromCart, addToCart, updateCartItemQuantity } from "../services/localStorageService";
 function Cart() {
   const navigate = useNavigate();
   const [cartData, setCartData] = useState(null);
@@ -25,21 +26,14 @@ function Cart() {
       return;
     }
     setUserId(user.userId);
-    fetch(`http://localhost:8082/cart/getCartByUserId/${user.userId}`)
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`Your cart is empty`);
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setCartData(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError(err.message || "Failed to load cart.");
-        setLoading(false);
-      });
+    try {
+      const cart = getCart();
+      setCartData(cart);
+    } catch (err) {
+      setError(err.message || "Failed to load cart.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
   if (loading) {
     return (
@@ -85,15 +79,10 @@ function Cart() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`http://localhost:8082/cart/clearCart/${uid}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json().catch(() => null);
-      setMessage(data?.message || "Cart cleared");
+      clearCart();
+      setMessage("Cart cleared");
       setCartData({ items: [] });
       localStorage.setItem("shopEasyCartCount", JSON.stringify(0));
-      // notify other parts of the app
       try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: 0 } })); } catch (e) {}
     } catch (err) {
       setError(err.message || "Failed to clear cart.");
@@ -104,38 +93,29 @@ function Cart() {
   const handleRemoveItem = (cartItemId) => {
     setCartMessage(null);
     setError(null);
-    fetch(`http://localhost:8082/cart/removeItemFromCart/${cartItemId}`, {
-      method: "DELETE",
-    })
-      .then((res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        return res.json();
-      })
-      .then((data) => {
-            setCartData((prev) => {
-              // determine removed item's quantity to update global count
-              const removedItem = (prev?.items || []).find((item) => item.cartItemId === cartItemId);
-              const removedQty = removedItem ? Number(removedItem.quantity || 0) : 0;
-              const newItems = prev?.items?.filter((item) => item.cartItemId !== cartItemId) || [];
-
-              // update shared localStorage key and notify other components
-              try {
-                const raw = localStorage.getItem('shopEasyCartCount');
-                const curr = raw ? Number(JSON.parse(raw)) : 0;
-                const updated = Math.max(0, curr - removedQty);
-                localStorage.setItem('shopEasyCartCount', JSON.stringify(updated));
-                window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: updated } }));
-              } catch (e) {}
-
-              return { ...prev, items: newItems };
-            });
-            setCartMessage(data.message || "Item removed from cart.");
-      })
-      .catch((err) => {
-        setError(err.message || "Failed to remove item.");
+    try {
+      // find productId for the cartItemId
+      const prev = getCart();
+      const removedItem = (prev?.items || []).find((item) => item.cartItemId === cartItemId);
+      const removedQty = removedItem ? Number(removedItem.quantity || 0) : 0;
+      if (removedItem) {
+        removeFromCart(removedItem.productId);
+      }
+      setCartData((prevData) => {
+        const newItems = (prevData?.items || []).filter((item) => item.cartItemId !== cartItemId);
+        return { ...prevData, items: newItems };
       });
+      try {
+        const raw = localStorage.getItem('shopEasyCartCount');
+        const curr = raw ? Number(JSON.parse(raw)) : 0;
+        const updated = Math.max(0, curr - removedQty);
+        localStorage.setItem('shopEasyCartCount', JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: updated } }));
+      } catch (e) {}
+      setCartMessage("Item removed from cart.");
+    } catch (err) {
+      setError(err.message || "Failed to remove item.");
+    }
   };
   return (
     <>
@@ -222,24 +202,14 @@ function Cart() {
       try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: updated } })); } catch (e) {}
     } catch (e) {}
 
-    // call backend: reuse addToCart to increment quantity
-    fetch('http://localhost:8082/cart/addToCart', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: userId, productId: item.productId, quantity: 1 }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        setCartMessage(data.message || 'Quantity updated');
-      })
-      .catch((err) => {
-        // revert on error
-        setCartData(prevCart);
-        setCartError(err.message || 'Failed to update quantity');
-      });
+    // Update persisted cart via local service
+    try {
+      addToCart(item.productId, 1);
+      setCartMessage('Quantity updated');
+    } catch (err) {
+      setCartData(prevCart);
+      setCartError(err.message || 'Failed to update quantity');
+    }
   }}
 >
   +

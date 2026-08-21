@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Payment.css";
 import Navbar from "../components/Navbar";
+import { getAddressesByUserId, addOrder } from "../services/localStorageService";
 
 
 function Payment() {
@@ -35,18 +36,15 @@ function Payment() {
       const user = JSON.parse(storedUser);
       if (user?.userId) setUserId(user.userId);
 
-      // attempt to fetch user's saved addresses and pick first as addressId
-      fetch(`http://localhost:8083/address/getAddressByUser/${user.userId}`)
-        .then((res) => res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`)))
-        .then((data) => {
-          const address = Array.isArray(data) ? data[0] : data;
-          if (address) {
-            setAddressObj(address);
-            if (address?.addressId) setAddressId(address.addressId);
-            if (address?.id) setAddressId(address.id);
-          }
-        })
-        .catch(() => {});
+      try {
+        const data = getAddressesByUserId(user.userId);
+        const address = Array.isArray(data) ? data[0] : data;
+        if (address) {
+          setAddressObj(address);
+          if (address?.addressId) setAddressId(address.addressId);
+          if (address?.id) setAddressId(address.id);
+        }
+      } catch (e) {}
     }
   }, []);
 
@@ -132,19 +130,10 @@ function Payment() {
       // include shipping address details when available
       if (addressObj) payload.shippingAddress = addressObj;
 
-      const res = await fetch("http://localhost:8083/order/placeOrder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+      const data = addOrder({
+        ...payload,
+        totalAmount: Number(totalAmount) + 100,
       });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => null);
-        throw new Error(err?.message || `HTTP ${res.status}`);
-      }
-
-      const data = await res.json();
-      // store last order for order-success page
       localStorage.setItem("lastOrder", JSON.stringify(data));
       navigate("/order-success");
     } catch (err) {

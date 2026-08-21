@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Products.css";
 import Navbar from "../components/Navbar";
+import { getProducts, addToCart } from "../services/localStorageService";
 
 const API_URL = "http://localhost:8085/products/getAllProduct";
 
@@ -36,14 +37,7 @@ function Products() {
       setLoading(true);
       setError("");
 
-      const response = await fetch(API_URL);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch products");
-      }
-
-      const data = await response.json();
-
+      const data = getProducts();
       setProducts(data);
       setFilteredProducts(data);
     } catch (err) {
@@ -112,17 +106,10 @@ function Products() {
     }
 
     try {
-      const res = await fetch("http://localhost:8082/cart/addToCart", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, productId: product.productId, quantity: 1 }),
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      alert(data.message || `${product.productName} added to cart.`);
+      const cart = addToCart(product.productId, 1);
+      alert(`${product.productName} added to cart.`);
       const prevCount = Number(JSON.parse(localStorage.getItem("shopEasyCartCount") || "0"));
-      const updated = prevCount + 1;
+      const updated = Array.isArray(cart.items) ? cart.items.reduce((s, it) => s + (Number(it.quantity) || 0), 0) : prevCount + 1;
       localStorage.setItem("shopEasyCartCount", JSON.stringify(updated));
       try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: updated } })); } catch (e) {}
     } catch (err) {

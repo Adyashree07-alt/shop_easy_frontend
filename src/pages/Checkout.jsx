@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Checkout.css";
 import Navbar from "../components/Navbar";
+import { getAddressesByUserId, addAddress } from "../services/localStorageService";
 
 function Checkout() {
   const navigate = useNavigate();
@@ -44,15 +45,10 @@ function Checkout() {
       }
     }
 
-    fetch(`http://localhost:8083/address/getAddressByUser/${user.userId}`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        const address = Array.isArray(data) ? data[0] : data;
-        if (!address) return;
-
+    try {
+      const data = getAddressesByUserId(user.userId);
+      const address = Array.isArray(data) ? data[0] : data;
+      if (address) {
         setFullName(address.fullName || address.full_name || "");
         setMobileNumber(address.mobileNumber || address.mobile_number || "");
         setAddressLine1(address.addressLine1 || address.address_line1 || "");
@@ -61,10 +57,10 @@ function Checkout() {
         setStateValue(address.state || address.stateValue || "");
         setCountry(address.country || "India");
         setPinCode(address.pinCode || address.pin_code || "");
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+      }
+    } catch (err) {
+      console.error(err);
+    }
   }, []);
 
   const handleSaveAddress = async () => {
@@ -78,31 +74,18 @@ function Checkout() {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8083/address/saveAddress", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId,
-          fullName,
-          mobileNumber,
-          addressLine1,
-          addressLine2,
-          city,
-          state: stateValue,
-          country,
-          pinCode,
-        }),
+      const newAddr = addAddress({
+        userId,
+        fullName,
+        mobileNumber,
+        addressLine1,
+        addressLine2,
+        city,
+        state: stateValue,
+        country,
+        pinCode,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || `HTTP ${response.status}`);
-      }
-
-      const data = await response.json();
-      setMessage(data.message || "Address saved successfully");
+      setMessage("Address saved successfully");
       navigate("/payment");
     } catch (err) {
       setError(err.message || "Failed to save address.");

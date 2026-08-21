@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import "./CategoryPage.css";
 import Navbar from "../components/Navbar";
+import localStorageService, { getCategories, getProductsByCategory, addToCart } from "../services/localStorageService";
 
 const iconMap = {
   Electronics: "💻",
@@ -38,23 +39,17 @@ const CategoryPage = () => {
     if (id) {
       setLoadingProducts(true);
       setError(null);
-
-      fetch(`http://localhost:8085/products/getProductsByCategoryId/${id}`)
-        .then((res) => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.json();
-        })
-        .then((data) => {
-          if (!active) return;
-          setProducts(Array.isArray(data) ? data : []);
-        })
-        .catch((err) => {
-          if (!active) return;
-          setError(err.message || "Failed to load products");
-        })
-        .finally(() => {
-          if (active) setLoadingProducts(false);
-        });
+      try {
+        const cats = getCategories();
+        const cat = cats.find((c) => String(c.categoryId) === String(id));
+        const name = cat ? cat.categoryName : null;
+        const prods = name ? getProductsByCategory(name) : [];
+        setProducts(Array.isArray(prods) ? prods : []);
+      } catch (err) {
+        setError(err.message || "Failed to load products");
+      } finally {
+        if (active) setLoadingProducts(false);
+      }
 
       return () => {
         active = false;
@@ -64,51 +59,34 @@ const CategoryPage = () => {
     setLoadingCategories(true);
     setError(null);
 
-    fetch("http://localhost:8085/category/getAllCategories")
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then(async (data) => {
-        if (!active) return;
+    try {
+      const data = getCategories();
+      const mapped = (Array.isArray(data) ? data : []).map((cat) => ({
+        id: cat.categoryId,
+        name: cat.categoryName,
+        description: cat.description || "Explore products in this category.",
+        icon: iconMap[cat.categoryName] || "📦",
+      }));
 
-        const mapped = (Array.isArray(data) ? data : []).map((cat) => ({
-          id: cat.categoryId,
-          name: cat.categoryName,
-          description: cat.description || "Explore products in this category.",
-          icon: iconMap[cat.categoryName] || "📦",
-        }));
+      setCategories(mapped);
 
-        setCategories(mapped);
-
-        const mappedProducts = {};
-        for (const category of mapped) {
-          try {
-            const res = await fetch(
-              `http://localhost:8085/products/getProductsByCategoryId/${category.id}`
-            );
-            if (!res.ok) {
-              mappedProducts[category.id] = [];
-              continue;
-            }
-            const result = await res.json();
-            mappedProducts[category.id] = Array.isArray(result) ? result.slice(0, 7) : [];
-          } catch {
-            mappedProducts[category.id] = [];
-          }
+      const mappedProducts = {};
+      for (const category of mapped) {
+        try {
+          const result = getProductsByCategory(category.name);
+          mappedProducts[category.id] = Array.isArray(result) ? result.slice(0, 7) : [];
+        } catch {
+          mappedProducts[category.id] = [];
         }
+      }
 
-        if (active) {
-          setProductsByCategory(mappedProducts);
-        }
-      })
-      .catch((err) => {
-        if (!active) return;
-        setError(err.message || "Failed to load categories");
-      })
-      .finally(() => {
-        if (active) setLoadingCategories(false);
-      });
+      if (active) setProductsByCategory(mappedProducts);
+    } catch (err) {
+      if (!active) return;
+      setError(err.message || "Failed to load categories");
+    } finally {
+      if (active) setLoadingCategories(false);
+    }
 
     return () => {
       active = false;
@@ -145,39 +123,17 @@ const CategoryPage = () => {
       return;
     }
 
-    fetch("http://localhost:8082/cart/addToCart", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userId,
-        productId,
-        quantity,
-      }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data) => {
-        setCartMessage(data.message || "Product added to cart.");
-        try {
-          const serverCount = data?.cartTotalQuantity ?? data?.totalQuantity ?? data?.cart?.totalQuantity ?? null;
-          if (typeof serverCount === 'number') {
-            try { localStorage.setItem('shopEasyCartCount', JSON.stringify(serverCount)); } catch (e) {}
-            try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: serverCount } })); } catch (e) {}
-          } else {
-            const prev = Number(JSON.parse(localStorage.getItem('shopEasyCartCount') || '0')) || 0;
-            const updated = prev + Number(quantity || 1);
-            try { localStorage.setItem('shopEasyCartCount', JSON.stringify(updated)); } catch (e) {}
-            try { window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: updated } })); } catch (e) {}
-          }
-        } catch (e) {}
-      })
-      .catch((err) => {
-        setCartError(err.message || "Failed to add to cart.");
-      });
+    try {
+      const cart = addToCart(productId, quantity);
+      setCartMessage("Product added to cart.");
+      try {
+        const totalQty = Array.isArray(cart.items) ? cart.items.reduce((s, i) => s + (Number(i.quantity) || 0), 0) : 0;
+        localStorage.setItem('shopEasyCartCount', JSON.stringify(totalQty));
+        window.dispatchEvent(new CustomEvent('shopEasyCartUpdated', { detail: { count: totalQty } }));
+      } catch (e) {}
+    } catch (err) {
+      setCartError(err.message || "Failed to add to cart.");
+    }
   };
 
   if (id) {

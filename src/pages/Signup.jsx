@@ -37,25 +37,15 @@ const Signup = () => {
     }
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:8081/user/signUp", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          mobileNumber,
-          password,
-        }),
+      const { addUser } = await import("../services/localStorageService");
+      const newUser = addUser({
+        firstName,
+        lastName,
+        email,
+        mobileNumber,
+        password,
       });
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
-        throw new Error(errorData?.message || `HTTP ${response.status}`);
-      }
-      const data = await response.json();
-      setMessage(data.message || "User registered successfully");
+      setMessage("User registered successfully");
       setError(null);
       setErrors({});
       setLoading(false);
